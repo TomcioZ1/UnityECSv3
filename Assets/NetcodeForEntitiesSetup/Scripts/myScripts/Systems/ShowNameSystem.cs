@@ -15,7 +15,7 @@ public partial struct ShowNameSystem : ISystem
     {
         foreach (var playerName in SystemAPI.Query<RefRO<PlayerName>>())
         {
-            //Debug.Log("Player name: " + playerName.ValueRO.Value.ToString());
+            Debug.Log("Player name: " + playerName.ValueRO.Value.ToString());
         }
     }
 
