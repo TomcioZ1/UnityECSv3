@@ -1,4 +1,4 @@
-/*using Unity.Collections;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.NetCode;
 using UnityEngine;
@@ -15,16 +15,17 @@ public partial struct ChatServerSystem : ISystem
                  .WithAll<ReceiveRpcCommandRequest>()
                  .WithEntityAccess())
         {
-            Debug.Log("SERVER RECEIVED: " + rpc.ValueRO.Message);
+            Debug.Log("SERVER RECEIVED: " + rpc.ValueRO.Sender + rpc.ValueRO.Message);
 
             // broadcast do wszystkich klientów
             var broadcast = ecb.CreateEntity();
             ecb.AddComponent(broadcast, new ChatMessageRpc
             {
+                Sender = rpc.ValueRO.Sender,
                 Message = rpc.ValueRO.Message
             });
             ecb.AddComponent<SendRpcCommandRequest>(broadcast);
-
+            
             // usuñ oryginalny RPC od klienta
             ecb.DestroyEntity(entity);
         }
@@ -33,4 +34,3 @@ public partial struct ChatServerSystem : ISystem
         ecb.Dispose();
     }
 }
-*/

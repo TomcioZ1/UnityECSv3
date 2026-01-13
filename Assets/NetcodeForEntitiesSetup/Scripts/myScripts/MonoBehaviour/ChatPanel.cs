@@ -5,6 +5,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using Unity.Collections;
 using System.ComponentModel.Design;
+using Unity.VisualScripting;
+using System.Linq;
+
+
 
 
 #if ENABLE_INPUT_SYSTEM
@@ -64,18 +68,18 @@ public class ChatPanel : MonoBehaviour
         }
 
         // Obs³uga przychodz¹cych wiadomoœci
-        if (em != null)
+        var msgQuery = em.CreateEntityQuery(typeof(ChatMessageEvent));
+        var msgEntities = msgQuery.ToEntityArray(Allocator.Temp);
+
+        foreach (var e in msgEntities)
         {
-            var msgQuery = em.CreateEntityQuery(typeof(ChatMessageEvent));
-            var msgEntities = msgQuery.ToEntityArray(Unity.Collections.Allocator.Temp);
-            foreach (var e in msgEntities)
-            {
-                var msg = em.GetComponentData<ChatMessageEvent>(e).Message.ToString();
-                AddMessage(msg);
-                em.DestroyEntity(e);
-            }
-            msgEntities.Dispose();
+            var data = em.GetComponentData<ChatMessageEvent>(e);
+            AddMessage($"{data.Sender}: {data.Message}");
+            em.DestroyEntity(e); //  event jednorazowy
         }
+
+        msgEntities.Dispose();
+
     }
 
     public void OpenChat()
@@ -94,20 +98,31 @@ public class ChatPanel : MonoBehaviour
 
     public void SendMessage()
     {
-        if (string.IsNullOrWhiteSpace(inputField.text))
-        {
-            CloseChat();
-            return;
-        }
-
+        if (string.IsNullOrWhiteSpace(inputField.text)) return;
         if (em == null) return;
 
+        // pobierz po³¹czenie klienta z serwerem
+        var connectionQuery = em.CreateEntityQuery(typeof(NetworkStreamConnection));
+        if (connectionQuery.IsEmpty) return;
+
+        var connection = connectionQuery.GetSingletonEntity();
+
         var e = em.CreateEntity();
+
         em.AddComponentData(e, new ChatMessageRpc
         {
+            Sender = em.GetComponentData<PlayerName>(
+            em.CreateEntityQuery(typeof(PlayerName), typeof(GhostOwnerIsLocal))
+              .ToEntityArray(Allocator.Temp)[0]
+            ).Value,
             Message = new FixedString128Bytes(inputField.text)
         });
-        em.AddComponent<SendRpcCommandRequest>(e);
+
+        em.AddComponentData(e, new SendRpcCommandRequest
+        {
+            TargetConnection = connection
+        });
+
         inputField.text = "";
     }
 

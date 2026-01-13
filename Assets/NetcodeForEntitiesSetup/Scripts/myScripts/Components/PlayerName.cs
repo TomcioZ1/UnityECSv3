@@ -9,8 +9,3 @@ public struct PlayerName : IComponentData
     public FixedString64Bytes Value;
 }
 
-// Komponent zarz¹dzany do trzymania referencji do UI
-public class PlayerNameReference : IComponentData
-{
-    public TextMeshPro TextElement;
-}

@@ -54,6 +54,17 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         /// Sets the cube input data based on the pressed keys.
         /// </summary>
         /// <param name="state">Raw entity system state, unused here.</param>
+        /// 
+
+
+        public void OnCreate(ref SystemState state)
+        {
+            // NAPRAWA: System nie uruchomi OnUpdate, dopóki LocalPauseState nie zostanie stworzony.
+            // To zapobiega b³êdowi InvalidOperationException.
+            state.RequireForUpdate<LocalPauseState>();
+        }
+
+
         public void OnUpdate(ref SystemState state)
         {
             if (SystemAPI.GetSingleton<LocalPauseState>().IsPaused) return;
