@@ -56,6 +56,8 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         /// <param name="state">Raw entity system state, unused here.</param>
         public void OnUpdate(ref SystemState state)
         {
+            if (SystemAPI.GetSingleton<LocalPauseState>().IsPaused) return;
+
 #if ENABLE_INPUT_SYSTEM
             var left = Keyboard.current.aKey.isPressed;
             var right = Keyboard.current.dKey.isPressed;
