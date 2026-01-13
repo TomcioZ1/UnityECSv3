@@ -19,7 +19,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         /// Horizontal movement (X axis).
         /// </summary>
         public int Horizontal;
-        
+
         /// <summary>
         /// Vertical movement (Z axis).
         /// </summary>
@@ -82,7 +82,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             }
         }
     }
-    
+
     /// <summary>
     /// System in charge of moving the cube based on the input for entities with the Simulate flag.
     /// Input: <see cref="CubeInput"/> component data, <see cref="LocalTransform"/> component data.
@@ -111,3 +111,6 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         }
     }
 }
+
+
+
