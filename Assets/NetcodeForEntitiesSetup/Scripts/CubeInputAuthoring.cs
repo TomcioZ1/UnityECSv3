@@ -3,6 +3,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Transforms;
+using Unity.VisualScripting;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -67,7 +68,14 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
 
         public void OnUpdate(ref SystemState state)
         {
-            if (SystemAPI.GetSingleton<LocalPauseState>().IsPaused) return;
+            if (SystemAPI.GetSingleton<LocalPauseState>().IsPaused)
+            {
+                foreach (var playerInput in SystemAPI.Query<RefRW<CubeInput>>().WithAll<GhostOwnerIsLocal>())
+                {
+                    playerInput.ValueRW = default;
+                }
+                return;
+            }
 
 #if ENABLE_INPUT_SYSTEM
             var left = Keyboard.current.aKey.isPressed;

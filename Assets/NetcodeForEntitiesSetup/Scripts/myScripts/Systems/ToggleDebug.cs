@@ -33,6 +33,13 @@ public partial struct ToggleDebug : ISystem
 
         // 3. Logika przypisania
         // Jeœli EscPressed to true -> IsPaused bêdzie true. Jeœli false -> false.
-        pauseState.ValueRW.IsPaused = inputData.EscPressed;
+        if (inputData.EscPressed || inputData.EnterPressed)
+        {
+            pauseState.ValueRW.IsPaused = true;
+        }
+        else
+        {
+            pauseState.ValueRW.IsPaused = false;
+        }
     }
 }

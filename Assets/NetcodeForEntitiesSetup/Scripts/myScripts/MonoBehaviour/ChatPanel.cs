@@ -48,22 +48,51 @@ public class ChatPanel : MonoBehaviour
         enterPressed = UnityEngine.Input.GetKeyDown(KeyCode.Return);
 #endif
 
-        if (enterPressed)
+        World clientWorld = GetClientWorld();
+        if (clientWorld == null) return;
+
+        var em = clientWorld.EntityManager;
+
+        // 1. Musimy znaleŸæ encjê, która posiada ten komponent
+        var query = em.CreateEntityQuery(typeof(PressedKeyesComponent));
+
+        if (!query.IsEmpty)
         {
-            //Debug.Log("Enter pressed in ChatPanel");
-            if (!panel.activeSelf)
+            Entity entity = query.GetSingletonEntity();
+
+            // 1. Pobierasz KOPIE danych
+            var data = em.GetComponentData<PressedKeyesComponent>(entity);
+            
+
+            if (enterPressed)
             {
-                // Otwórz panel chatu
-                OpenChat();
-            }
-            else if (!string.IsNullOrWhiteSpace(inputField.text))
-            {
-                // Wyœlij wiadomoœæ
-                SendMessage();
-            }
-            else
-            {
-                CloseChat();
+                //Debug.Log("Enter pressed in ChatPanel");
+                if (!panel.activeSelf)
+                {
+                    // Otwórz panel chatu
+                    OpenChat();
+                    // 2. Zmieniasz wartoœæ w KOPII
+                    data.EnterPressed = true;
+
+                }
+                else if (!string.IsNullOrWhiteSpace(inputField.text))
+                {
+                    // Wyœlij wiadomoœæ
+                    SendMessage();
+                    OpenChat();
+                    // 2. Zmieniasz wartoœæ w KOPII
+                    data.EnterPressed = true;
+
+                }
+                else
+                {
+                    CloseChat();
+                    // 2. Zmieniasz wartoœæ w KOPII
+                    data.EnterPressed = false;
+
+                }
+                // 3. KLUCZOWY KROK: Wysy³asz zmodyfikowan¹ kopiê z powrotem do ECS
+                em.SetComponentData(entity, data);
             }
         }
 
@@ -74,7 +103,7 @@ public class ChatPanel : MonoBehaviour
         foreach (var e in msgEntities)
         {
             var data = em.GetComponentData<ChatMessageEvent>(e);
-            AddMessage($"{data.Sender}: {data.Message}");
+            AddMessage($"<color=#00FF00>{data.Sender}:</color> {data.Message}");
             em.DestroyEntity(e); //  event jednorazowy
         }
 
@@ -149,5 +178,19 @@ public class ChatPanel : MonoBehaviour
         }
         Canvas.ForceUpdateCanvases();
         scrollRect.verticalNormalizedPosition = 0f;
+    }
+
+
+
+    private World GetClientWorld()
+    {
+        foreach (var world in World.All)
+        {
+            if (world.IsClient() && !world.IsThinClient())
+            {
+                return world;
+            }
+        }
+        return null;
     }
 }

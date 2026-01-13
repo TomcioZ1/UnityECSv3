@@ -76,12 +76,6 @@ public class PauseMenuScript : MonoBehaviour
 
 
 
-
-
-
-
-
-
     private World GetClientWorld()
     {
         foreach (var world in World.All)
