@@ -77,7 +77,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             if (scene.IsValid())
                 return;
             
-            SceneManager.LoadSceneAsync(SceneToLoad, LoadSceneMode.Additive);
+            SceneManager.LoadSceneAsync(SceneToLoad, LoadSceneMode.Additive); // single
         }
 
         void Awake()
@@ -219,7 +219,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                     m_PingText = networkSnapshotAck.EstimatedRTT > 0 ? $"{(int) networkSnapshotAck.EstimatedRTT}ms" : "Connected";
                 }
 
-                UIBehaviour.ConnectionStatus = $"{address} | {m_PingText}";
+                UIBehaviour.ConnectionStatus = $"<color=#00FF00>{address} | {m_PingText}:</color>"; //<color=#00FF00>{address} | {m_PingText}:</color>
             }
             else
             {

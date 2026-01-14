@@ -64,7 +64,7 @@ public class ChatPanel : MonoBehaviour
             var data = em.GetComponentData<PressedKeyesComponent>(entity);
             
 
-            if (enterPressed)
+            if (enterPressed && !em.GetComponentData<PressedKeyesComponent>(entity).EscPressed)
             {
                 //Debug.Log("Enter pressed in ChatPanel");
                 if (!panel.activeSelf)
