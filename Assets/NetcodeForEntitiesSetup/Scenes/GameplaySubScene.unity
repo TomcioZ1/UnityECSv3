@@ -252,27 +252,14 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1791369727}
-  - component: {fileID: 1791369726}
+  - component: {fileID: 1791369728}
   m_Layer: 0
-  m_Name: Shooting
+  m_Name: ShootingSpawner
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1791369726
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1791369725}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 797338a5536fa7542b29725815436ba3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  projectilePrefab: {fileID: 5004504028219973639, guid: f522f7628cc62a74e909cc74ed00248b, type: 3}
 --- !u!4 &1791369727
 Transform:
   m_ObjectHideFlags: 0
@@ -288,6 +275,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1791369728
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1791369725}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40ef19b4d9c86814b9a27c282b7cebbd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Prefab: {fileID: 1644533397948232232, guid: 73ee087d0f303e24baedbfe00fd9bc26, type: 3}
 --- !u!1 &1966227286
 GameObject:
   m_ObjectHideFlags: 0

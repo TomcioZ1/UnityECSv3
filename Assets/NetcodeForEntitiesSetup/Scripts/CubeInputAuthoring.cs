@@ -39,6 +39,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent<CubeInput>(entity);
+                AddComponent<PlayerShootInput>(entity);
             }
         }
     }
