@@ -12,6 +12,7 @@ public class PlayerNameInput : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+        Name = PlayerInfoClass.PlayerName;
     }
 
     public TMP_InputField inputField;
