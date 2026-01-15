@@ -2410,6 +2410,7 @@ GameObject:
   - component: {fileID: 1815066670}
   - component: {fileID: 1815066669}
   - component: {fileID: 1815066673}
+  - component: {fileID: 1815066674}
   m_Layer: 5
   m_Name: Canvas world space
   m_TagString: Untagged
@@ -2514,6 +2515,23 @@ MonoBehaviour:
   textMeshPrefab: {fileID: 1256034111352162731, guid: d177c21a1ca82d0428960e5309c6e2e9, type: 3}
   offset: {x: 0, y: 1, z: 0}
   showDebugLogs: 1
+--- !u!114 &1815066674
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1815066668}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b259a448d9eb3d498aa10e3079308f3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  HealthBarPrefab: {fileID: 8710294495714321598, guid: ca477781da9d44543b3e34a6d0684bfc, type: 3}
+  HealthBarOffset:
+    x: 0
+    y: 0.8
+    z: 0
 --- !u!1 &1832724727
 GameObject:
   m_ObjectHideFlags: 0

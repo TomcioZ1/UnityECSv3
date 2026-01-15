@@ -18,7 +18,6 @@ GameObject:
   - component: {fileID: 5996855946115863355}
   - component: {fileID: 5346902258940447177}
   - component: {fileID: 1992405043338316944}
-  - component: {fileID: 2426118947206669226}
   m_Layer: 0
   m_Name: PlayerCapsule
   m_TagString: Untagged
@@ -205,18 +204,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   defaultName: Player
---- !u!114 &2426118947206669226
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4189385226845935106}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3ace6043cb4c8284f95195bdb11eb049, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &4802109308915642917
 GameObject:
   m_ObjectHideFlags: 0

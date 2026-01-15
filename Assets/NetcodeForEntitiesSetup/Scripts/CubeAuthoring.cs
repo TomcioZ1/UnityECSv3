@@ -22,6 +22,10 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent<Cube>(entity);
+                AddComponent(entity, new PlayerHealthComponent
+                {
+                    HealthPoints = 100
+                });
             }
         }
     }

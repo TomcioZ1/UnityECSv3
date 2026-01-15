@@ -45,6 +45,7 @@ public class EntityCameraFollow : MonoBehaviour
             // U¿ywamy pozycji cameraGameObject zamiast transform.position skryptu
             transform.position = Vector3.Lerp(transform.position, targetCameraPos, Time.deltaTime * smoothness);
             transform.LookAt(playerPos + lookAtOffset);
+           
         }
         else
         {
