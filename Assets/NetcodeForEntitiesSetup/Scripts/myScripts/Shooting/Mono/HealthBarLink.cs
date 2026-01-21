@@ -19,7 +19,7 @@ public class HealthBarLink : MonoBehaviour
     {
         if (slider != null)
         {
-            slider.value = currentHealth;
+            slider.value = currentHealth/100;
         }
 
         if (fillImage != null)

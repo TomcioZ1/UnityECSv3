@@ -40,7 +40,7 @@ public class HealthBarManager : MonoBehaviour
 
         // 3. Pobranie wszystkich encji graczy (Cubes)
         var query = em.CreateEntityQuery(
-            ComponentType.ReadOnly<PlayerHealthComponent>(),
+            ComponentType.ReadOnly<HealthComponent>(),
             ComponentType.ReadOnly<LocalTransform>(),
             ComponentType.ReadOnly<GhostOwner>() // U¿ywamy GhostOwner zamiast tagu IsLocal
         );
@@ -61,7 +61,7 @@ public class HealthBarManager : MonoBehaviour
 
             var linkRef = _activeBars[entity];
             var transformData = em.GetComponentData<LocalTransform>(entity);
-            var health = em.GetComponentData<PlayerHealthComponent>(entity);
+            var health = em.GetComponentData<HealthComponent>(entity);
 
             // 4. LOGIKA KOLORU: Porównujemy NetworkId w³aœciciela z naszym NetworkId
             bool isLocal = false;

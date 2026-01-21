@@ -8,15 +8,17 @@ using Unity.Collections;
 public class EntityCameraFollow : MonoBehaviour
 {
     [Header("Ustawienia Œledzenia")]
-    [SerializeField] private Vector3 offset = new Vector3(0, 5f, -10f);
-    [SerializeField] private float smoothness = 10f;
-    [SerializeField] private Vector3 lookAtOffset = new Vector3(0, 1.5f, 0);
+    [SerializeField] private Vector3 offset = new Vector3(0, 20f, 0);
+    [SerializeField] private float smoothness = 20f;
+
+    [Header("Ustawienia K¹ta")]
+    [Range(0, 90)]
+    [SerializeField] private float pitchAngle = 90f; // K¹t patrzenia w dó³ (X)
 
     private World _clientWorld;
 
     void LateUpdate()
     {
-        // 1. Szukanie œwiata klienta
         if (_clientWorld == null || !_clientWorld.IsCreated)
         {
             _clientWorld = FindClientWorld();
@@ -24,34 +26,24 @@ public class EntityCameraFollow : MonoBehaviour
         }
 
         var em = _clientWorld.EntityManager;
-
-        // 2. Zapytanie o lokalnego gracza (GhostOwnerIsLocal jest kluczowy)
         var query = em.CreateEntityQuery(
             ComponentType.ReadOnly<LocalToWorld>(),
             ComponentType.ReadOnly<GhostOwnerIsLocal>()
         );
 
-        // U¿ywamy CalculateEntityCount zamiast HasFilter() dla pewnoœci diagnostyki
-        int count = query.CalculateEntityCount();
-
-        if (count > 0)
+        if (query.CalculateEntityCount() > 0)
         {
             using var entities = query.ToEntityArray(Allocator.Temp);
             var ltw = em.GetComponentData<LocalToWorld>(entities[0]);
-            Vector3 playerPos = ltw.Position;
 
-            Vector3 targetCameraPos = playerPos + offset;
+            // 1. Pozycja docelowa (zgodna z koordynatami œwiata)
+            Vector3 targetPos = (Vector3)ltw.Position + offset;
+            transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * smoothness);
 
-            // U¿ywamy pozycji cameraGameObject zamiast transform.position skryptu
-            transform.position = Vector3.Lerp(transform.position, targetCameraPos, Time.deltaTime * smoothness);
-            transform.LookAt(playerPos + lookAtOffset);
-           
-        }
-        else
-        {
-            // Loguj co jakiœ czas, jeœli nie widzi gracza mimo œwiata klienta
-            if (Time.frameCount % 100 == 0)
-                Debug.Log("[CameraFollow] Œwiat klienta OK, ale nie widzê encji z GhostOwnerIsLocal.");
+            // 2. KLUCZ: Wymuszenie rotacji kamery "w dó³"
+            // Ustawiamy X na k¹t nachylenia, a Y i Z na ZERO.
+            // Dziêki temu Y=0 sprawia, ¿e krawêdzie ekranu s¹ idealnie równoleg³e do osi X i Z œwiata.
+            transform.rotation = Quaternion.Euler(pitchAngle, 0, 0);
         }
     }
 
@@ -59,16 +51,8 @@ public class EntityCameraFollow : MonoBehaviour
     {
         foreach (var world in World.All)
         {
-            if (world.IsClient() && !world.IsThinClient())
-            {
-                Debug.Log($"[CameraFollow] Sukces! Znaleziono œwiat klienta: {world.Name}");
-                return world; // Zwróæ TYLKO jeœli warunki s¹ spe³nione
-            }
+            if (world.IsClient() && !world.IsThinClient()) return world;
         }
-
-        if (Time.frameCount % 100 == 0)
-            Debug.Log("[CameraFollow] Szukam œwiata klienta...");
-
         return null;
     }
 }

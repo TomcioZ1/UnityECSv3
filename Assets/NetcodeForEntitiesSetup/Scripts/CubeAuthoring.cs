@@ -1,31 +1,32 @@
 using Unity.Entities;
 using UnityEngine;
-    
+using Unity.Mathematics;
+
 namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
 {
-    /// <summary>
-    /// Flag component to mark an entity as a cube.
-    /// </summary>
-    public struct Cube : IComponentData
-    {
-    }
+    public struct Cube : IComponentData { }
 
-    /// <summary>
-    /// The authoring component for the Cube.
-    /// </summary>
     [DisallowMultipleComponent]
     public class CubeAuthoring : MonoBehaviour
     {
+        
         class CubeBaker : Baker<CubeAuthoring>
         {
             public override void Bake(CubeAuthoring authoring)
             {
+                // Encja g³ównego gracza (Cube)
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
+
                 AddComponent<Cube>(entity);
-                AddComponent(entity, new PlayerHealthComponent
+
+                AddComponent(entity, new HealthComponent
                 {
                     HealthPoints = 100
                 });
+
+                // --- LOGIKA R¥K ---
+
+               
             }
         }
     }

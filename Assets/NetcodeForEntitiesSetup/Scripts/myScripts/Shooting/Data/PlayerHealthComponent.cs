@@ -1,7 +1,7 @@
 using Unity.Entities;
 using Unity.NetCode;
 
-public struct PlayerHealthComponent : IComponentData
+public struct HealthComponent : IComponentData
 {
     [GhostField] public int HealthPoints;
 }
