@@ -14,7 +14,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
     {
         public int Horizontal;
         public int Vertical;
-        public float3 MouseWorldPos; // Przechowuje punkt celowania w œwiecie
+        public float3 MouseWorldPos;
     }
 
     [DisallowMultipleComponent]
@@ -26,8 +26,8 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent<MyPlayerInput>(entity);
-                // Zak³adam, ¿e PlayerShootInput jest zdefiniowany gdzie indziej
-                AddComponent<PlayerShootInput>(entity); 
+                // Strzelanie zostaje nietkniête zgodnie z instrukcj¹
+                AddComponent<PlayerShootInput>(entity);
             }
         }
     }
@@ -51,18 +51,21 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                 return;
             }
 
-            // 1. OBLICZANIE POZYCJI MYSZY W ŒWIECIE (Raycast do p³aszczyzny Y=0)
+            // --- POPRAWKA ROTACJI: STABILNY RAYCAST ---
             float3 worldMousePos = float3.zero;
+            bool hasValidMousePos = false;
+
             if (Camera.main != null)
             {
                 Vector2 screenMousePos = Mouse.current.position.ReadValue();
                 Ray ray = Camera.main.ScreenPointToRay(screenMousePos);
 
-                // Matematyczne przeciêcie promienia z p³aszczyzn¹ Y=0 (pod³oga)
-                if (ray.direction.y != 0)
+                // U¿ywamy p³aszczyzny matematycznej - to rozwi¹zuje problem "dziwnego" obracania w buildzie
+                Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
+                if (groundPlane.Raycast(ray, out float enter))
                 {
-                    float distance = -ray.origin.y / ray.direction.y;
-                    worldMousePos = (float3)ray.GetPoint(distance);
+                    worldMousePos = (float3)ray.GetPoint(enter);
+                    hasValidMousePos = true;
                 }
             }
 
@@ -80,16 +83,23 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
 
             foreach (var playerInput in SystemAPI.Query<RefRW<MyPlayerInput>>().WithAll<GhostOwnerIsLocal>())
             {
-                // Resetujemy tylko kierunki, zachowuj¹c dane o myszy jeœli potrzebne, 
-                // ale tutaj nadpisujemy wszystko dla czystoœci.
-                var input = new MyPlayerInput();
+                var input = playerInput.ValueRW; // Zachowujemy obecny stan
 
+                input.Horizontal = 0;
                 if (left) input.Horizontal -= 1;
                 if (right) input.Horizontal += 1;
+
+                input.Vertical = 0;
                 if (down) input.Vertical -= 1;
                 if (up) input.Vertical += 1;
 
-                input.MouseWorldPos = worldMousePos;
+                // Aktualizujemy pozycjê myszy tylko jeœli raycast trafi³ w ziemiê
+                // Zapobiega to gwa³townemu odwracaniu siê postaci do (0,0,0) gdy mysz ucieknie z okna
+                if (hasValidMousePos)
+                {
+                    input.MouseWorldPos = worldMousePos;
+                }
+
                 playerInput.ValueRW = input;
             }
         }
@@ -103,24 +113,27 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         public void OnUpdate(ref SystemState state)
         {
             var dt = SystemAPI.Time.DeltaTime;
-            var moveSpeed = 5f; // Sta³a prêdkoœæ
+            var moveSpeed = 5f;
 
             foreach (var (input, trans) in
                      SystemAPI.Query<RefRO<MyPlayerInput>, RefRW<LocalTransform>>()
                      .WithAll<Simulate>())
             {
-                // 1. RUCH (Niezale¿ny od obrotu - koordynaty œwiata)
+                // 1. RUCH
                 float2 moveInput = new float2(input.ValueRO.Horizontal, input.ValueRO.Vertical);
-                moveInput = math.normalizesafe(moveInput) * moveSpeed * dt;
-                trans.ValueRW.Position += new float3(moveInput.x, 0, moveInput.y);
-
-                // 2. ROTACJA (Patrzenie w stronê myszki)
-                float3 dirToMouse = input.ValueRO.MouseWorldPos - trans.ValueRO.Position;
-                dirToMouse.y = 0; // Blokujemy pochylanie siê kapsu³y
-
-                if (math.lengthsq(dirToMouse) > 0.01f)
+                if (math.lengthsq(moveInput) > 0.001f)
                 {
-                    // Ustawiamy rotacjê kapsu³y tak, by patrzy³a na punkt myszy
+                    moveInput = math.normalize(moveInput) * moveSpeed * dt;
+                    trans.ValueRW.Position += new float3(moveInput.x, 0, moveInput.y);
+                }
+
+                // 2. ROTACJA (Stabilizacja dla Builda)
+                float3 dirToMouse = input.ValueRO.MouseWorldPos - trans.ValueRO.Position;
+                dirToMouse.y = 0;
+
+                // Zwiêkszony próg (0.1f zamiast 0.01f) eliminuje drgania wynikaj¹ce z precyzji w buildzie
+                if (math.lengthsq(dirToMouse) > 0.1f)
+                {
                     trans.ValueRW.Rotation = quaternion.LookRotationSafe(dirToMouse, math.up());
                 }
             }

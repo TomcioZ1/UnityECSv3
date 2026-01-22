@@ -77,7 +77,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             if (scene.IsValid())
                 return;
             
-            SceneManager.LoadSceneAsync(SceneToLoad, LoadSceneMode.Additive); // single
+            SceneManager.LoadSceneAsync(SceneToLoad, LoadSceneMode.Single); // single
         }
 
         void Awake()

@@ -1,62 +1,55 @@
 using Unity.Burst;
 using Unity.Entities;
 using Unity.NetCode;
+using UnityEngine;
 
 [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
-[UpdateAfter(typeof(ProjectileHitSystem))]
+[UpdateAfter(typeof(ProjectileMoveSystem))]
+// DODAJEMY FILTR - bez tego system mo¿e dzia³aæ w pustym œwiecie bakingu
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ServerSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
 [BurstCompile]
 public partial struct ProjectileDestroySystem : ISystem
 {
-    private EntityQuery _singletonQuery;
-
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        // KLUCZ: Deklarujemy jawnie zapytanie o singletona ECB. 
-        // To eliminuje b³¹d "required component type was not declared" w Burst.
-        _singletonQuery = state.GetEntityQuery(ComponentType.ReadOnly<EndSimulationEntityCommandBufferSystem.Singleton>());
-
+        // Upewniamy siê, ¿e system czeka na czas sieciowy
         state.RequireForUpdate<NetworkTime>();
-        state.RequireForUpdate(_singletonQuery);
     }
 
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        var networkTime = SystemAPI.GetSingleton<NetworkTime>();
+        // 1. SprawdŸ czy mamy czas (bezpiecznik)
+        if (!SystemAPI.TryGetSingleton<NetworkTime>(out var networkTime)) return;
 
-        // W Netcode niszczymy/wy³¹czamy tylko w tym specyficznym ticku
-        if (!networkTime.IsFirstTimeFullyPredictingTick) return;
-
-        // BEZPIECZNE POBIERANIE ECB:
-        // Pobieramy singletona przez zapytanie zadeklarowane w OnCreate.
-        // U¿ywamy GetSingletonEntity, aby unikn¹æ b³êdu "matches 2", jeœli Netcode zduplikowa³ systemy.
-        var ecbEntity = _singletonQuery.GetSingletonEntity();
-        var ecbSingleton = state.EntityManager.GetComponentData<EndSimulationEntityCommandBufferSystem.Singleton>(ecbEntity);
+        // 2. Pobierz ECB (u¿ywamy najprostszego sposobu dla Unity 6)
+        var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
         var isServer = state.WorldUnmanaged.IsServer();
 
-        // PÊTLA ZABEZPIECZONA:
-        // WithNone<Disabled> zapobiega "podwójnemu niszczeniu", które powodowa³o ArgumentException
+        // 3. PÊTLA - usun¹³em Simulate i doda³em logowanie na samym pocz¹tku
         foreach (var (proj, entity) in SystemAPI.Query<RefRO<ProjectileComponent>>()
-                     .WithAll<Simulate>()
-                     .WithNone<Disabled>()
-                     .WithEntityAccess())
+                     .WithEntityAccess()) // USUNIÊTO: Simulate, Disabled
         {
+            // Ten log MUSI siê pojawiæ, jeœli pocisk istnieje w tym œwiecie
+            //Debug.Log($"[DestroySystem] Widzê encjê {entity.Index}. Lifetime: {proj.ValueRO.Lifetime}");
+
             if (proj.ValueRO.Lifetime <= 0)
             {
-                if (isServer)
+                // Niszczymy tylko w pierwszym ticku predykcji (standard Netcode)
+                if (networkTime.IsFirstTimeFullyPredictingTick)
                 {
-                    // Na serwerze niszczymy ca³kowicie
-                    ecb.DestroyEntity(entity);
-                }
-                else
-                {
-                    // Na kliencie TYLKO wy³¹czamy. Netcode sam usunie encjê, 
-                    // gdy dostanie info z serwera. To zapobiega b³êdom desynchronizacji.
-                    ecb.AddComponent<Disabled>(entity);
+                    if (isServer)
+                    {
+                        ecb.DestroyEntity(entity);
+                    }
+                    else
+                    {
+                        // Dodajemy disabled, ¿eby klient go nie widzia³
+                        ecb.AddComponent<Disabled>(entity);
+                    }
                 }
             }
         }
