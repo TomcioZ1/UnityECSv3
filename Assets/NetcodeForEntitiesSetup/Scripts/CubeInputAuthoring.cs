@@ -14,6 +14,8 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
     {
         public int Horizontal;
         public int Vertical;
+        public byte leftMouseButton;
+        public byte rightMouseButton;
         public float3 MouseWorldPos;
     }
 
@@ -74,11 +76,15 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             var right = Keyboard.current.dKey.isPressed;
             var down = Keyboard.current.sKey.isPressed;
             var up = Keyboard.current.wKey.isPressed;
+            var leftMouse = Mouse.current.leftButton.isPressed;
+            var rightMouse = Mouse.current.rightButton.isPressed;
 #else
             var left = UnityEngine.Input.GetKey(KeyCode.A);
             var right = UnityEngine.Input.GetKey(KeyCode.D);
             var down = UnityEngine.Input.GetKey(KeyCode.S);
             var up = UnityEngine.Input.GetKey(KeyCode.W);
+            var leftMouse = UnityEngine.Input.GetMouseButton(0);
+            var rightMouse = UnityEngine.Input.GetMouseButton(1);
 #endif
 
             foreach (var playerInput in SystemAPI.Query<RefRW<MyPlayerInput>>().WithAll<GhostOwnerIsLocal>())

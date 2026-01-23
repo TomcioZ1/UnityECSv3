@@ -1,17 +1,32 @@
 using Unity.Entities;
 using Unity.NetCode;
-public struct HandsComponent : IComponentData
+
+[GhostComponent] // <--- DODAJ TO
+public struct ActiveHands : IComponentData
 {
-    [GhostField] public Entity LeftHand;
-    [GhostField] public Entity RightHand;
-    [GhostField] public HandState State;
-    [GhostField] public float AnimationTimer;
+    [GhostField] public Entity LeftHandEntity;
+    [GhostField] public Entity RightHandEntity;
+
+    public Entity PrevLeftHand;
+    public Entity PrevRightHand;
 }
 
-public enum HandState { Idle, LeftPunch, RightPunch }
-
-public struct PunchingHand : IComponentData
+// Komponent na broni (¿eby wiedzia³a do kogo nale¿y)
+public struct HandsOwner : IComponentData
 {
-    public float Damage;
-    public float Reach; // Jak daleko wysuwa siê rêka
+    public Entity Entity;
+}
+
+
+public struct HandsResources : IComponentData
+{
+    public Entity LeftHand;
+    public Entity RightHand;
+
+}
+
+public struct HandsSocket : IComponentData
+{
+    public Entity RightHandSocket; // Gniazdo w d³oni postaci
+    public Entity LeftHandSocket; // Gniazdo w d³oni postaci
 }
