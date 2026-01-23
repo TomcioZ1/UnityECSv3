@@ -54,6 +54,7 @@ public partial struct ProjectileHitSystem : ISystem
 
                     if (state.WorldUnmanaged.IsServer() && health.HealthPoints <= 0)
                     {
+                        if (!networkTime.IsFirstTimeFullyPredictingTick) return;
                         ecb.DestroyEntity(healthEntities[i]);
                     }
                     break;

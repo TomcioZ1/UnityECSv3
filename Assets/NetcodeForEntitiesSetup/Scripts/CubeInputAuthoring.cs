@@ -17,6 +17,8 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         public byte leftMouseButton;
         public byte rightMouseButton;
         public float3 MouseWorldPos;
+        public float3 AimDirection;
+        public byte choosenWeapon;
     }
 
     [DisallowMultipleComponent]
@@ -29,7 +31,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent<MyPlayerInput>(entity);
                 // Strzelanie zostaje nietkniête zgodnie z instrukcj¹
-                AddComponent<PlayerShootInput>(entity);
+                //AddComponent<PlayerShootInput>(entity);
             }
         }
     }
@@ -78,6 +80,11 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             var up = Keyboard.current.wKey.isPressed;
             var leftMouse = Mouse.current.leftButton.isPressed;
             var rightMouse = Mouse.current.rightButton.isPressed;
+            var choosenWeapon = Keyboard.current.digit1Key.isPressed ? (byte)1 :
+                               Keyboard.current.digit2Key.isPressed ? (byte)2 :
+                               Keyboard.current.digit3Key.isPressed ? (byte)3 :
+                               Keyboard.current.digit3Key.isPressed ? (byte)4 :
+                               (byte)0;
 #else
             var left = UnityEngine.Input.GetKey(KeyCode.A);
             var right = UnityEngine.Input.GetKey(KeyCode.D);
@@ -85,11 +92,15 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             var up = UnityEngine.Input.GetKey(KeyCode.W);
             var leftMouse = UnityEngine.Input.GetMouseButton(0);
             var rightMouse = UnityEngine.Input.GetMouseButton(1);
+
 #endif
 
             foreach (var playerInput in SystemAPI.Query<RefRW<MyPlayerInput>>().WithAll<GhostOwnerIsLocal>())
             {
                 var input = playerInput.ValueRW; // Zachowujemy obecny stan
+                if(leftMouse) input.leftMouseButton = 1; else input.leftMouseButton = 0;
+                if (leftMouse) input.leftMouseButton = 1; else input.leftMouseButton = 0;
+                input.choosenWeapon = choosenWeapon;
 
                 input.Horizontal = 0;
                 if (left) input.Horizontal -= 1;

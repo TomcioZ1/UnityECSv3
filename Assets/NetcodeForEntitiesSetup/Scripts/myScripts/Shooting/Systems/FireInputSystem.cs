@@ -4,6 +4,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Unity.Multiplayer.Center.NetcodeForEntitiesSetup;
 
 [UpdateInGroup(typeof(GhostInputSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
@@ -35,20 +36,22 @@ public partial class FireInputSystem : SystemBase
         }
 
         // Szukamy lokalnego gracza i aktualizujemy jego input
-        foreach (var (input, transform) in SystemAPI.Query<RefRW<PlayerShootInput>, RefRO<LocalTransform>>().WithAll<GhostOwnerIsLocal>())
+        foreach (var (input, transform) in SystemAPI.Query<RefRW<MyPlayerInput>, RefRO<LocalTransform>>().WithAll<GhostOwnerIsLocal>())
         {
-            bool isPressed = Mouse.current.leftButton.isPressed;
-            input.ValueRW.ShootPrimary = (byte)(isPressed ? 1 : 0);
-
-            // Obliczamy kierunek
-            float3 direction = worldMousePoint - transform.ValueRO.Position;
-            direction.y = 0;
-
-            // Zapisujemy znormalizowany kierunek
-            if (math.lengthsq(direction) > 0.001f)
+            if (input.ValueRO.leftMouseButton != 0)
             {
-                input.ValueRW.AimDirection = math.normalize(direction);
+                
+                // Obliczamy kierunek
+                float3 direction = worldMousePoint - transform.ValueRO.Position;
+                direction.y = 0;
+
+                // Zapisujemy znormalizowany kierunek
+                if (math.lengthsq(direction) > 0.001f)
+                {
+                    input.ValueRW.AimDirection = math.normalize(direction);
+                }
             }
+
         }
     }
 }
