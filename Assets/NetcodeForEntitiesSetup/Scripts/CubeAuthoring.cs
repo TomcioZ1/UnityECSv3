@@ -9,7 +9,8 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
     [DisallowMultipleComponent]
     public class CubeAuthoring : MonoBehaviour
     {
-        
+        public GameObject WeaponSocket;
+
         class CubeBaker : Baker<CubeAuthoring>
         {
             public override void Bake(CubeAuthoring authoring)
@@ -24,9 +25,14 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                     HealthPoints = 100
                 });
 
-                // --- LOGIKA R¥K ---
+                AddComponent(entity, new WeaponSocket
+                {
+                    WeaponSocketEntity = GetEntity(authoring.WeaponSocket, TransformUsageFlags.Dynamic)
+                });
 
-               
+                AddComponent(entity, new ActiveWeapon { });
+
+
             }
         }
     }
