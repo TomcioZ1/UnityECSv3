@@ -9,8 +9,10 @@ using UnityEngine.InputSystem;
 // 1. Wymuszamy dzia³anie w fazie renderowania (raz na klatkê obrazu)
 [UpdateInGroup(typeof(PresentationSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
+[BurstCompile]
 public partial struct ToggleDebug : ISystem
 {
+    [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
         if (!SystemAPI.HasSingleton<LocalPauseState>())

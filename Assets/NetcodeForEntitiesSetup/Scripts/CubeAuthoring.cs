@@ -27,10 +27,14 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                     HealthPoints = 100
                 });
 
+                AddComponent(entity, new ActiveWeapon { });
                 AddComponent(entity, new WeaponSocket
                 {
                     WeaponSocketEntity = GetEntity(authoring.WeaponSocket, TransformUsageFlags.Dynamic)
                 });
+
+                AddComponent<HandAttackData>(entity);
+                AddComponent(entity, new ActiveHands { });
                 AddComponent(entity, new HandsSocket
                 {
                     LeftHandSocket = GetEntity(authoring.LeftHandSocket, TransformUsageFlags.Dynamic),
@@ -39,8 +43,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
 
 
 
-                AddComponent(entity, new ActiveWeapon { });
-                AddComponent(entity, new ActiveHands { });
+                
 
 
             }

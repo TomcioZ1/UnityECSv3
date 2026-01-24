@@ -30,3 +30,12 @@ public struct HandsSocket : IComponentData
     public Entity RightHandSocket; // Gniazdo w d³oni postaci
     public Entity LeftHandSocket; // Gniazdo w d³oni postaci
 }
+
+
+[GhostComponent]
+public struct HandAttackData : IComponentData
+{
+    [GhostField] public float AttackProgress;
+    [GhostField] public bool IsAttacking;
+    [GhostField] public bool AttackIsLeft; // true = lewa, false = prawa
+}

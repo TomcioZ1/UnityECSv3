@@ -1,3 +1,4 @@
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.NetCode;
@@ -5,8 +6,10 @@ using UnityEngine;
 
 
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
+[BurstCompile]
 public partial struct ChatServerSystem : ISystem
 {
+    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         var ecb = new EntityCommandBuffer(Allocator.Temp);

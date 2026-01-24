@@ -1,3 +1,4 @@
+using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
@@ -5,8 +6,10 @@ using Unity.Transforms;
 
 [UpdateInGroup(typeof(PredictedSimulationSystemGroup), OrderFirst = false)]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation | WorldSystemFilterFlags.ClientSimulation)]
+[BurstCompile]
 public partial struct ActiveWeaponSystem : ISystem
 {
+    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         if (!SystemAPI.HasSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>())

@@ -10,8 +10,10 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
     [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ServerSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
     [UpdateInGroup(typeof(InitializationSystemGroup))]
     [CreateAfter(typeof(RpcSystem))]
+    [BurstCompile]
     public partial struct SetRpcSystemDynamicAssemblyListSystem : ISystem
     {
+        [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<RpcCollection>();

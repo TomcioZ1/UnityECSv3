@@ -1,15 +1,18 @@
+using Unity.Burst;
 using Unity.Entities;
-using Unity.NetCode;
 using Unity.Mathematics;
+using Unity.Multiplayer.Center.NetcodeForEntitiesSetup;
+using Unity.NetCode;
 using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Unity.Multiplayer.Center.NetcodeForEntitiesSetup;
 
 [UpdateInGroup(typeof(GhostInputSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
+[BurstCompile]
 public partial class FireInputSystem : SystemBase
 {
+    [BurstCompile]
     protected override void OnUpdate()
     {
         var cam = Camera.main;

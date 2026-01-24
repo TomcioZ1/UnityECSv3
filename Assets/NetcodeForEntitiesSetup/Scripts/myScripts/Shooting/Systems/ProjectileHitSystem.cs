@@ -7,10 +7,10 @@ using Unity.Transforms;
 using UnityEngine;
 
 [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
-//[BurstCompile]
+[BurstCompile]
 public partial struct ProjectileHitSystem : ISystem
 {
-    //[BurstCompile]
+    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         var networkTime = SystemAPI.GetSingleton<NetworkTime>();
@@ -46,7 +46,7 @@ public partial struct ProjectileHitSystem : ISystem
                     var health = healthDatas[i];
                     health.HealthPoints -= proj.ValueRO.Damage;
                     ecb.SetComponent(healthEntities[i], health);
-                    Debug.Log($"Entity {entity} hit Entity {healthEntities[i]}. New Health: {health.HealthPoints}");
+                    //Debug.Log($"Entity {entity} hit Entity {healthEntities[i]}. New Health: {health.HealthPoints}");
 
                     // Zamiast niszczyæ, ustawiamy Lifetime na 0
                     // To jest nasz "sygna³" dla drugiego systemu

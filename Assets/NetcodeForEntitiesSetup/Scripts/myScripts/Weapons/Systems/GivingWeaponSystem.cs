@@ -1,9 +1,12 @@
+using Unity.Burst;
 using Unity.Entities;
 using Unity.NetCode;
 
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
+[BurstCompile]
 public partial struct GrantWeaponSystem : ISystem
 {
+    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         if (!SystemAPI.HasSingleton<WeaponResources>()) return;

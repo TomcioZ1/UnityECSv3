@@ -37,6 +37,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
     }
 
     [UpdateInGroup(typeof(GhostInputSystemGroup))]
+    [BurstCompile]
     public partial struct SampleCubeInput : ISystem
     {
         public void OnCreate(ref SystemState state)
