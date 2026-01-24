@@ -24,7 +24,8 @@ public partial struct HandsSystem : ISystem
         // --- 1. LOGIKA ATAKU (Tylko dla tych z Inputem) ---
         foreach (var (input, anim) in SystemAPI.Query<RefRO<Unity.Multiplayer.Center.NetcodeForEntitiesSetup.MyPlayerInput>, RefRW<HandAttackData>>().WithAll<Simulate>())
         {
-            if (input.ValueRO.leftMouseButton == 1 && !anim.ValueRO.IsAttacking)
+            // Atakuj tylko jeœli wybrano rêce (3)
+            if (input.ValueRO.choosenWeapon==3 && input.ValueRO.leftMouseButton == 1 && !anim.ValueRO.IsAttacking)
             {
                 anim.ValueRW.IsAttacking = true;
                 anim.ValueRW.AttackProgress = 0f;

@@ -7,6 +7,7 @@ public struct ActiveWeapon : IComponentData
 {
     [GhostField] public Entity WeaponEntity;
     public Entity PreviousWeaponEntity;
+    [GhostField] public byte SelectedWeaponId;
 }
 
 // Komponent na broni (¿eby wiedzia³a do kogo nale¿y)

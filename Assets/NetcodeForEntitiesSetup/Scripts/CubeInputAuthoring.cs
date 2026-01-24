@@ -29,7 +29,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             public override void Bake(CubeInputAuthoring authoring)
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
-                AddComponent<MyPlayerInput>(entity);
+                AddComponent(entity, new MyPlayerInput { choosenWeapon = 3 });
                 // Strzelanie zostaje nietkniête zgodnie z instrukcj¹
                 //AddComponent<PlayerShootInput>(entity);
             }
@@ -51,7 +51,9 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             {
                 foreach (var playerInput in SystemAPI.Query<RefRW<MyPlayerInput>>().WithAll<GhostOwnerIsLocal>())
                 {
+                    var ForNowchoosenWeapon = playerInput.ValueRW.choosenWeapon;
                     playerInput.ValueRW = default;
+                    playerInput.ValueRW.choosenWeapon = ForNowchoosenWeapon;
                 }
                 return;
             }
@@ -101,8 +103,10 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                 var input = playerInput.ValueRW; // Zachowujemy obecny stan
                 if(leftMouse) input.leftMouseButton = 1; else input.leftMouseButton = 0;
                 if (leftMouse) input.leftMouseButton = 1; else input.leftMouseButton = 0;
-                input.choosenWeapon = choosenWeapon;
-
+                if (choosenWeapon != 0)
+                {
+                    input.choosenWeapon = choosenWeapon;
+                }
                 input.Horizontal = 0;
                 if (left) input.Horizontal -= 1;
                 if (right) input.Horizontal += 1;

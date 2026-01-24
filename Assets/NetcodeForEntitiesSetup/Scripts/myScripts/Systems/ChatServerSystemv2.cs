@@ -18,7 +18,7 @@ public partial struct ChatServerSystem : ISystem
                  .WithAll<ReceiveRpcCommandRequest>()
                  .WithEntityAccess())
         {
-            Debug.Log("SERVER RECEIVED: " + rpc.ValueRO.Sender + rpc.ValueRO.Message);
+            Debug.Log($"SERVER RECEIVED from {rpc.ValueRO.Sender}: {rpc.ValueRO.Message}");
 
             // broadcast do wszystkich klientów
             var broadcast = ecb.CreateEntity();

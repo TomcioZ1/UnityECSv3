@@ -4,66 +4,88 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Transforms;
-using UnityEngine;
 
 [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
 [BurstCompile]
 public partial struct ProjectileHitSystem : ISystem
 {
+    private EntityQuery _targetQuery;
+
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        // ROZWI¥ZANIE B£ÊDU BC1028: 
+        // U¿ywamy EntityQueryBuilder z Allocator.Temp, co jest wspierane przez Burst.
+        _targetQuery = new EntityQueryBuilder(Allocator.Temp)
+            .WithAll<HealthComponent, LocalTransform>()
+            .Build(ref state);
+
+        state.RequireForUpdate<NetworkTime>();
+    }
+
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         var networkTime = SystemAPI.GetSingleton<NetworkTime>();
         if (!networkTime.IsFirstTimeFullyPredictingTick) return;
 
-        var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
-        var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
+        // Pobieramy dane do NativeArray (Allocator.TempJob dla bezpieczeñstwa Jobów)
+        var targetEntities = _targetQuery.ToEntityArray(Allocator.TempJob);
+        var targetTransforms = _targetQuery.ToComponentDataArray<LocalTransform>(Allocator.TempJob);
 
-        // Pobieramy dane celów
-        var healthQuery = SystemAPI.QueryBuilder().WithAll<HealthComponent, LocalTransform>().Build();
-        var healthEntities = healthQuery.ToEntityArray(Allocator.TempJob);
-        var healthTransforms = healthQuery.ToComponentDataArray<LocalTransform>(Allocator.TempJob);
-        var healthDatas = healthQuery.ToComponentDataArray<HealthComponent>(Allocator.TempJob);
+        var healthLookup = state.GetComponentLookup<HealthComponent>(false);
 
-        // Szukamy pocisków, które jeszcze "¿yj¹"
-        foreach (var (trans, proj, entity) in SystemAPI.Query<RefRO<LocalTransform>, RefRW<ProjectileComponent>>()
-                     .WithAll<Simulate>()
-                     .WithEntityAccess())
+        var hitJob = new ProjectileHitJob
         {
-            // Jeœli Lifetime ju¿ jest <= 0, ignorujemy (pocisk ju¿ w coœ trafi³ lub wygas³)
-            if (proj.ValueRO.Lifetime <= 0) continue;
+            TargetEntities = targetEntities,
+            TargetTransforms = targetTransforms,
+            HealthLookup = healthLookup,
+        };
 
-            float3 projPos = trans.ValueRO.Position;
-            Entity owner = proj.ValueRO.Owner;
+        // Uruchomienie równoleg³e na wielu rdzeniach
+        state.Dependency = hitJob.ScheduleParallel(state.Dependency);
 
-            for (int i = 0; i < healthEntities.Length; i++)
+        // Zwolnienie tablic dopiero po zakoñczeniu Joba
+        targetEntities.Dispose(state.Dependency);
+        targetTransforms.Dispose(state.Dependency);
+    }
+}
+
+[BurstCompile]
+public partial struct ProjectileHitJob : IJobEntity
+{
+    [ReadOnly] public NativeArray<Entity> TargetEntities;
+    [ReadOnly] public NativeArray<LocalTransform> TargetTransforms;
+
+    [NativeDisableParallelForRestriction]
+    public ComponentLookup<HealthComponent> HealthLookup;
+
+    public void Execute(RefRW<ProjectileComponent> proj, in LocalTransform trans)
+    {
+        if (proj.ValueRO.Lifetime <= 0) return;
+
+        float3 projPos = trans.Position;
+        Entity owner = proj.ValueRO.Owner;
+
+        for (int i = 0; i < TargetEntities.Length; i++)
+        {
+            Entity targetEntity = TargetEntities[i];
+
+            if (targetEntity == owner) continue;
+
+            if (math.distancesq(projPos, TargetTransforms[i].Position) <= 0.2f)
             {
-                if (healthEntities[i] == owner) continue;
-
-                if (math.distancesq(projPos, healthTransforms[i].Position) <= 0.09f)
+                if (HealthLookup.HasComponent(targetEntity))
                 {
-                    // TRAFIENIE
-                    var health = healthDatas[i];
+                    var health = HealthLookup[targetEntity];
                     health.HealthPoints -= proj.ValueRO.Damage;
-                    ecb.SetComponent(healthEntities[i], health);
-                    //Debug.Log($"Entity {entity} hit Entity {healthEntities[i]}. New Health: {health.HealthPoints}");
-
-                    // Zamiast niszczyæ, ustawiamy Lifetime na 0
-                    // To jest nasz "sygna³" dla drugiego systemu
-                    proj.ValueRW.Lifetime = 0;
-
-                    if (state.WorldUnmanaged.IsServer() && health.HealthPoints <= 0)
-                    {
-                        if (!networkTime.IsFirstTimeFullyPredictingTick) return;
-                        ecb.DestroyEntity(healthEntities[i]);
-                    }
-                    break;
+                    health.LastHitBy = owner;
+                    HealthLookup[targetEntity] = health;
                 }
+
+                proj.ValueRW.Lifetime = 0;
+                break;
             }
         }
-
-        healthEntities.Dispose();
-        healthTransforms.Dispose();
-        healthDatas.Dispose();
     }
 }

@@ -33,7 +33,10 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                     WeaponSocketEntity = GetEntity(authoring.WeaponSocket, TransformUsageFlags.Dynamic)
                 });
 
-                AddComponent<HandAttackData>(entity);
+                AddComponent(entity, new HandAttackData
+                {
+                    AttackDamage = 20
+                });
                 AddComponent(entity, new ActiveHands { });
                 AddComponent(entity, new HandsSocket
                 {

@@ -28,6 +28,7 @@ public partial struct ProjectileSpawnSystem : ISystem
         {
             // Zmiana: strza³ wyzwalany gdy wartoœæ jest 1 (zak³adaj¹c InputEvent lub int)
             if (input.ValueRO.leftMouseButton == 0) continue;
+            if (input.ValueRO.choosenWeapon == 3) continue;
 
             Entity projectile = ecb.Instantiate(prefab.Value);
 

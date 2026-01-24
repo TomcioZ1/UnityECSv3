@@ -1,4 +1,5 @@
 using Unity.Entities;
+using Unity.Mathematics;
 using Unity.NetCode;
 
 [GhostComponent] // <--- DODAJ TO
@@ -37,5 +38,19 @@ public struct HandAttackData : IComponentData
 {
     [GhostField] public float AttackProgress;
     [GhostField] public bool IsAttacking;
-    [GhostField] public bool AttackIsLeft; // true = lewa, false = prawa
+    [GhostField] public bool AttackIsLeft;
+
+    // To pole jest synchronizowane, aby klient móg³ np. wyœwietliæ 
+    // informacjê o tym, ile obra¿eñ zadaje jego postaæ.
+    [GhostField] public int AttackDamage;
+
+    // To pole NIE jest [GhostField], bo s³u¿y tylko jako wewnêtrzna 
+    // flaga logiczna serwera podczas zamachu.
+    public bool HasAppliedDamage;
+}
+
+[GhostComponent]
+public struct BaseScale : IComponentData
+{
+    [GhostField] public float3 Value;
 }

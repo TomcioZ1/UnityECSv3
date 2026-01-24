@@ -9,3 +9,4 @@ public struct PlayerName : IComponentData
     public FixedString64Bytes Value;
 }
 
+public struct IsDestroyedTag : IComponentData { }

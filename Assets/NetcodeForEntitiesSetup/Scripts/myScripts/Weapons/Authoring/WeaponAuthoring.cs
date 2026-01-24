@@ -11,6 +11,12 @@ public class WeaponAuthoringComponent : MonoBehaviour
         {
             var entity = GetEntity(TransformUsageFlags.Dynamic);
 
+            //skala
+            AddComponent(entity, new BaseScale { Value = authoring.transform.localScale });
+
+            // 2. SKALA NIEJEDNOLITA: Wymagane, aby X, Y i Z mog³y mieæ ró¿ne wartoœci w ECS
+            AddComponent<PostTransformMatrix>(entity);
+
             // Musisz dodaæ te komponenty tutaj, aby broñ mog³a byæ "dzieckiem" socketu
             AddComponent<LocalTransform>(entity);
             AddComponent<Parent>(entity);

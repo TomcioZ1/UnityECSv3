@@ -170,7 +170,7 @@ public class ChatPanel : MonoBehaviour
     }
 
 
-    void mockWiadomosci()
+  /*  void mockWiadomosci()
     {
         for(int i = 0; i < 15; i++)
         {
@@ -178,7 +178,7 @@ public class ChatPanel : MonoBehaviour
         }
         Canvas.ForceUpdateCanvases();
         scrollRect.verticalNormalizedPosition = 0f;
-    }
+    }*/
 
 
 
