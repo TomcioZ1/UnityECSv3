@@ -1,9 +1,12 @@
-using UnityEngine;
 using Unity.Entities;
+using UnityEngine;
 
 public class WeaponSpawerAuthoring : MonoBehaviour
 {
     public GameObject PistolPrefab;
+    public GameObject ShotgunPrefab;
+    public GameObject SniperPrefab;
+    public GameObject AK47Prefab;
 
     public class Baker : Baker<WeaponSpawerAuthoring>
     {
@@ -12,8 +15,10 @@ public class WeaponSpawerAuthoring : MonoBehaviour
             var entity = GetEntity(TransformUsageFlags.None);
             AddComponent(entity, new WeaponResources
             {
-                // Wa¿ne: GetEntity zamienia Prefab GameObject na Entity
-                Pistol = GetEntity(authoring.PistolPrefab, TransformUsageFlags.Dynamic)
+                Pistol = GetEntity(authoring.PistolPrefab, TransformUsageFlags.Dynamic),
+                Shotgun = GetEntity(authoring.ShotgunPrefab, TransformUsageFlags.Dynamic),
+                Sniper = GetEntity(authoring.SniperPrefab, TransformUsageFlags.Dynamic),
+                ak47 = GetEntity(authoring.AK47Prefab, TransformUsageFlags.Dynamic)
             });
         }
     }

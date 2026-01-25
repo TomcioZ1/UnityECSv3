@@ -9,76 +9,86 @@ using Unity.Transforms;
 [BurstCompile]
 public partial struct ProjectileSpawnSystem : ISystem
 {
+    // Deklarujemy lookupy jako pola, aby ISystem móg³ je œledziæ
+    private ComponentLookup<WeaponData> weaponDataLookup;
+    private ComponentLookup<WeaponWorkState> weaponStateLookup;
+
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        // Gwarantujemy, ¿e system nie ruszy bez potrzebnych danych
-        state.RequireForUpdate<ProjectilePrefab>();
-        state.RequireForUpdate<BeginSimulationEntityCommandBufferSystem.Singleton>();
+        weaponDataLookup = state.GetComponentLookup<WeaponData>(false);
+        weaponStateLookup = state.GetComponentLookup<WeaponWorkState>(false);
     }
 
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        // 1. Bezpieczne pobranie Singletonów
         if (!SystemAPI.TryGetSingleton<ProjectilePrefab>(out var prefab)) return;
-        if (prefab.Value == Entity.Null) return;
 
-        var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
-        var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
+        // ODŒWIE¯ANIE LOOKUPÓW - bez tego gra siê crashuje!
+        weaponDataLookup.Update(ref state);
+        weaponStateLookup.Update(ref state);
+        var ltwLookup = state.GetComponentLookup<LocalToWorld>(true);
+        var ltLookup = state.GetComponentLookup<LocalTransform>(true);
 
-        // 2. POBIERAMY LOOKUPY BEZPOŒREDNIO TUTAJ (To naprawia NullRef w linii 15)
-        var weaponDataLookup = SystemAPI.GetComponentLookup<WeaponData>(true);
-        var localToWorldLookup = SystemAPI.GetComponentLookup<LocalToWorld>(true);
-        var localTransformLookup = SystemAPI.GetComponentLookup<LocalTransform>(true);
+        var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
+            .CreateCommandBuffer(state.WorldUnmanaged);
 
-        // 3. Pobieramy transformacjê prefaba (z zachowaniem skali)
-        if (!localTransformLookup.HasComponent(prefab.Value)) return;
-        var prefabTransform = localTransformLookup[prefab.Value];
+        double currentTime = SystemAPI.Time.ElapsedTime;
 
-        // 4. G³ówna pêtla graczy
-        foreach (var (input, activeWeapon, entity) in
+        foreach (var (input, activeWeapon, playerEntity) in
                  SystemAPI.Query<RefRO<MyPlayerInput>, RefRO<ActiveWeapon>>()
                  .WithAll<Simulate>()
                  .WithEntityAccess())
         {
-            // Filtry wejœcia
-            if (input.ValueRO.leftMouseButton == 0) continue;
-            if (input.ValueRO.choosenWeapon == 3) continue;
+            if (activeWeapon.ValueRO.SelectedWeaponId == 0 || activeWeapon.ValueRO.SelectedWeaponId == 3)
+                continue;
 
-            // Sprawdzenie broni
-            Entity weaponEnt = activeWeapon.ValueRO.WeaponEntity;
-            if (weaponEnt == Entity.Null || !weaponDataLookup.HasComponent(weaponEnt)) continue;
+            Entity wEntity = activeWeapon.ValueRO.WeaponEntity;
 
-            // Sprawdzenie spawnera (punktu wylotu lufy)
-            var weaponData = weaponDataLookup[weaponEnt];
-            Entity spawnerEnt = weaponData.ProjectileSpawner;
+            // Bardzo wa¿ne sprawdzenie istnienia encji przed dostêpem do lookupa
+            if (wEntity == Entity.Null || !weaponDataLookup.HasComponent(wEntity) || !weaponStateLookup.HasComponent(wEntity))
+                continue;
 
-            if (spawnerEnt == Entity.Null || !localToWorldLookup.HasComponent(spawnerEnt)) continue;
+            var weapon = weaponDataLookup[wEntity];
+            var wState = weaponStateLookup[wEntity];
 
-            // Pobieramy pozycjê ŒWIATOW¥ spawnera (LocalToWorld)
-            var spawnerLTW = localToWorldLookup[spawnerEnt];
-
-            // --- SPAWN ---
-            Entity projectile = ecb.Instantiate(prefab.Value);
-
-            float3 direction = math.normalizesafe(input.ValueRO.AimDirection);
-            if (math.all(direction == float3.zero)) direction = new float3(0, 0, 1);
-
-            // Ustawienie transformu na podstawie lufy
-            var projectileTransform = prefabTransform;
-            projectileTransform.Position = spawnerLTW.Position; // Pozycja z lufy
-            projectileTransform.Rotation = quaternion.LookRotationSafe(direction, math.up());
-
-            ecb.SetComponent(projectile, projectileTransform);
-
-            ecb.SetComponent(projectile, new ProjectileComponent
+            if (input.ValueRO.leftMouseButton == 1 && !wState.IsReloading && weapon.currentAmmo > 0 && currentTime >= wState.NextShotTime)
             {
-                Damage = 10,
-                Velocity = direction * 2f,
-                Lifetime = 3.0f,
-                Owner = entity
-            });
+                weapon.currentAmmo--;
+                wState.NextShotTime = (float)currentTime + weapon.fireRate;
+
+                weaponDataLookup[wEntity] = weapon;
+                weaponStateLookup[wEntity] = wState;
+
+                if (weapon.ProjectileSpawner != Entity.Null && ltwLookup.HasComponent(weapon.ProjectileSpawner))
+                {
+                    var spawnerLTW = ltwLookup[weapon.ProjectileSpawner];
+                    Entity projectile = ecb.Instantiate(prefab.Value);
+
+                    float3 direction = input.ValueRO.AimDirection;
+                    if (math.all(direction == 0)) direction = new float3(0, 0, 1);
+
+                    var transform = LocalTransform.FromPositionRotation(spawnerLTW.Position, quaternion.LookRotationSafe(direction, math.up()));
+                    transform.Scale = ltLookup.HasComponent(prefab.Value) ? ltLookup[prefab.Value].Scale : 1.0f;
+
+                    ecb.SetComponent(projectile, transform);
+                    ecb.SetComponent(projectile, new ProjectileComponent
+                    {
+                        Damage = weapon.damage,
+                        Velocity = direction * weapon.projectileSpeed,
+                        Lifetime = 3.0f,
+                        Owner = playerEntity
+                    });
+                }
+            }
+
+            if (weapon.currentAmmo <= 0 && !wState.IsReloading)
+            {
+                wState.IsReloading = true;
+                wState.ReloadTimer = (float)currentTime + weapon.reloadTime;
+                weaponStateLookup[wEntity] = wState;
+            }
         }
     }
 }

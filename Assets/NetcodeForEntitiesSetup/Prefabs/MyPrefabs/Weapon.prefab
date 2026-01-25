@@ -175,7 +175,7 @@ MonoBehaviour:
   Importance: 1
   MaxSendRate: 0
   prefabId: e7785cb299d3ac04781a1e018f45fb75
-  HasOwner: 0
+  HasOwner: 1
   SupportAutoCommandTarget: 1
   TrackInterpolationDelay: 0
   GhostGroup: 0
@@ -196,3 +196,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ProjectileSpawner: {fileID: 1866802973982617793}
+  MagSize: 30
+  FireRate: 0.1
+  ReloadTime: 2
+  ProjectileSpeed: 2
+  Damage: 10

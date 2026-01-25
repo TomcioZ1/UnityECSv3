@@ -30,8 +30,6 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent(entity, new MyPlayerInput { choosenWeapon = 3 });
-                // Strzelanie zostaje nietkniête zgodnie z instrukcj¹
-                //AddComponent<PlayerShootInput>(entity);
             }
         }
     }
@@ -51,14 +49,13 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             {
                 foreach (var playerInput in SystemAPI.Query<RefRW<MyPlayerInput>>().WithAll<GhostOwnerIsLocal>())
                 {
-                    var ForNowchoosenWeapon = playerInput.ValueRW.choosenWeapon;
+                    var weapon = playerInput.ValueRO.choosenWeapon;
                     playerInput.ValueRW = default;
-                    playerInput.ValueRW.choosenWeapon = ForNowchoosenWeapon;
+                    playerInput.ValueRW.choosenWeapon = weapon;
                 }
                 return;
             }
 
-            // --- POPRAWKA ROTACJI: STABILNY RAYCAST ---
             float3 worldMousePos = float3.zero;
             bool hasValidMousePos = false;
 
@@ -66,8 +63,6 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             {
                 Vector2 screenMousePos = Mouse.current.position.ReadValue();
                 Ray ray = Camera.main.ScreenPointToRay(screenMousePos);
-
-                // U¿ywamy p³aszczyzny matematycznej - to rozwi¹zuje problem "dziwnego" obracania w buildzie
                 Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
                 if (groundPlane.Raycast(ray, out float enter))
                 {
@@ -76,53 +71,31 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                 }
             }
 
-#if ENABLE_INPUT_SYSTEM
             var left = Keyboard.current.aKey.isPressed;
             var right = Keyboard.current.dKey.isPressed;
             var down = Keyboard.current.sKey.isPressed;
             var up = Keyboard.current.wKey.isPressed;
             var leftMouse = Mouse.current.leftButton.isPressed;
-            var rightMouse = Mouse.current.rightButton.isPressed;
+
             var choosenWeapon = Keyboard.current.digit1Key.isPressed ? (byte)1 :
                                Keyboard.current.digit2Key.isPressed ? (byte)2 :
                                Keyboard.current.digit3Key.isPressed ? (byte)3 :
-                               Keyboard.current.digit3Key.isPressed ? (byte)4 :
-                               (byte)0;
-#else
-            var left = UnityEngine.Input.GetKey(KeyCode.A);
-            var right = UnityEngine.Input.GetKey(KeyCode.D);
-            var down = UnityEngine.Input.GetKey(KeyCode.S);
-            var up = UnityEngine.Input.GetKey(KeyCode.W);
-            var leftMouse = UnityEngine.Input.GetMouseButton(0);
-            var rightMouse = UnityEngine.Input.GetMouseButton(1);
-
-#endif
+                               Keyboard.current.digit4Key.isPressed ? (byte)4 : (byte)0;
 
             foreach (var playerInput in SystemAPI.Query<RefRW<MyPlayerInput>>().WithAll<GhostOwnerIsLocal>())
             {
-                var input = playerInput.ValueRW; // Zachowujemy obecny stan
-                if(leftMouse) input.leftMouseButton = 1; else input.leftMouseButton = 0;
-                if (leftMouse) input.leftMouseButton = 1; else input.leftMouseButton = 0;
-                if (choosenWeapon != 0)
-                {
-                    input.choosenWeapon = choosenWeapon;
-                }
-                input.Horizontal = 0;
-                if (left) input.Horizontal -= 1;
-                if (right) input.Horizontal += 1;
+                playerInput.ValueRW.leftMouseButton = leftMouse ? (byte)1 : (byte)0;
+                if (choosenWeapon != 0) playerInput.ValueRW.choosenWeapon = choosenWeapon;
 
-                input.Vertical = 0;
-                if (down) input.Vertical -= 1;
-                if (up) input.Vertical += 1;
+                playerInput.ValueRW.Horizontal = 0;
+                if (left) playerInput.ValueRW.Horizontal -= 1;
+                if (right) playerInput.ValueRW.Horizontal += 1;
 
-                // Aktualizujemy pozycjê myszy tylko jeœli raycast trafi³ w ziemiê
-                // Zapobiega to gwa³townemu odwracaniu siê postaci do (0,0,0) gdy mysz ucieknie z okna
-                if (hasValidMousePos)
-                {
-                    input.MouseWorldPos = worldMousePos;
-                }
+                playerInput.ValueRW.Vertical = 0;
+                if (down) playerInput.ValueRW.Vertical -= 1;
+                if (up) playerInput.ValueRW.Vertical += 1;
 
-                playerInput.ValueRW = input;
+                if (hasValidMousePos) playerInput.ValueRW.MouseWorldPos = worldMousePos;
             }
         }
     }
@@ -131,15 +104,28 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
     [BurstCompile]
     public partial struct CubeMovementSystem : ISystem
     {
+        // U¿ywamy Lookup, ¿eby sprawdziæ komponent bez b³êdów Structural Change
+        private ComponentLookup<GhostOwnerIsLocal> ghostOwnerLookup;
+
+        [BurstCompile]
+        public void OnCreate(ref SystemState state)
+        {
+            ghostOwnerLookup = state.GetComponentLookup<GhostOwnerIsLocal>(true);
+        }
+
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             var dt = SystemAPI.Time.DeltaTime;
             var moveSpeed = 5f;
 
-            foreach (var (input, trans) in
+            // Odœwie¿amy lookup
+            ghostOwnerLookup.Update(ref state);
+
+            foreach (var (input, trans, entity) in
                      SystemAPI.Query<RefRO<MyPlayerInput>, RefRW<LocalTransform>>()
-                     .WithAll<Simulate>())
+                     .WithAll<Simulate>()
+                     .WithEntityAccess())
             {
                 // 1. RUCH
                 float2 moveInput = new float2(input.ValueRO.Horizontal, input.ValueRO.Vertical);
@@ -149,15 +135,21 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                     trans.ValueRW.Position += new float3(moveInput.x, 0, moveInput.y);
                 }
 
-                // 2. ROTACJA (Stabilizacja dla Builda)
-                float3 dirToMouse = input.ValueRO.MouseWorldPos - trans.ValueRO.Position;
-                dirToMouse.y = 0;
-
-                // Zwiêkszony próg (0.1f zamiast 0.01f) eliminuje drgania wynikaj¹ce z precyzji w buildzie
-                if (math.lengthsq(dirToMouse) > 0.1f)
+                // 2. ROTACJA - NAPRAWA
+                // Sprawdzamy, czy to MY sterujemy t¹ encj¹
+                if (ghostOwnerLookup.HasComponent(entity))
                 {
-                    trans.ValueRW.Rotation = quaternion.LookRotationSafe(dirToMouse, math.up());
+                    // Tylko dla naszej lokalnej postaci liczymy rotacjê z myszki
+                    float3 dirToMouse = input.ValueRO.MouseWorldPos - trans.ValueRO.Position;
+                    dirToMouse.y = 0;
+
+                    if (math.lengthsq(dirToMouse) > 0.1f)
+                    {
+                        trans.ValueRW.Rotation = quaternion.LookRotationSafe(dirToMouse, math.up());
+                    }
                 }
+                // Jeœli to NIE jest GhostOwnerIsLocal, system NIC nie robi z rotacj¹.
+                // Dziêki temu rotacja przeciwnika zostanie taka, jak¹ przys³a³ serwer (Netcode Sync).
             }
         }
     }

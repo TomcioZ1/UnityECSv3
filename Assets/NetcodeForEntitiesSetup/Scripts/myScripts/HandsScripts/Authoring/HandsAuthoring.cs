@@ -23,7 +23,7 @@ class HandsAuthoring : MonoBehaviour
 
             AddComponent<HandsOwner>(entity);
             AddComponent<GhostAuthoringComponent>(entity);
-            AddComponent<GhostOwner>(entity);
+            //AddComponent<GhostOwner>(entity);
         }
     }
 }

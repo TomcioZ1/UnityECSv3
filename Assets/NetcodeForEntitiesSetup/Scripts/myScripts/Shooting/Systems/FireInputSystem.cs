@@ -53,6 +53,7 @@ public partial class FireInputSystem : SystemBase
                 {
                     input.ValueRW.AimDirection = math.normalize(direction);
                 }
+                
             }
 
         }
