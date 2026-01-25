@@ -81,47 +81,36 @@ public partial struct WeaponControlSystem : ISystem
 
                 Entity newWeaponEntity = Entity.Null;
 
-                // C. Stwórz now¹ broñ
                 if (prefabToSpawn != Entity.Null)
                 {
                     newWeaponEntity = entityManager.Instantiate(prefabToSpawn);
 
-                    // 1. Pobierz domyœln¹ rotacjê i skalê z prefaba
-                    // To sprawi, ¿e jeœli broñ w prefabie jest obrócona o 90 stopni, to tak zostanie.
+                    // --- KLUCZ DO SKALI (0.3, 0.1, 0.1) ---
+                    // Pobieramy CA£Y transform z prefaba, który ma w sobie poprawne dane o skali
                     LocalTransform prefabTransform = entityManager.GetComponentData<LocalTransform>(prefabToSpawn);
 
-                    // GhostOwner
+                    // Zerujemy pozycjê, ¿eby broñ by³a w punkcie socketu, ale zostawiamy rotacjê i skalê
+                    prefabTransform.Position = float3.zero;
+
                     entityManager.SetComponentData(newWeaponEntity, new GhostOwner { NetworkId = req.NetworkId });
+                    entityManager.SetComponentData(newWeaponEntity, new WeaponOwner { Entity = req.PlayerEntity });
 
-                    // WeaponOwner
-                    entityManager.AddComponentData(newWeaponEntity, new WeaponOwner { Entity = req.PlayerEntity });
-
-                    // --- TRANSFORM I HIERARCHIA ---
+                    // Ustawienie hierarchii
                     if (!entityManager.HasComponent<Parent>(newWeaponEntity))
-                    {
                         entityManager.AddComponentData(newWeaponEntity, new Parent { Value = req.WeaponSocket });
-                    }
                     else
-                    {
                         entityManager.SetComponentData(newWeaponEntity, new Parent { Value = req.WeaponSocket });
-                    }
 
-                    // 2. Ustawiamy pozycjê na zero, ALE zachowujemy rotacjê i skalê z prefaba
-                    entityManager.SetComponentData(newWeaponEntity, LocalTransform.FromPositionRotationScale(
-                        float3.zero,
-                        prefabTransform.Rotation,
-                        prefabTransform.Scale
-                    ));
+                    // Aplikujemy transform (pozycja 0, skala z prefaba)
+                    entityManager.SetComponentData(newWeaponEntity, prefabTransform);
                 }
 
-                // D. Aktualizacja ActiveWeapon
                 var activeWeapon = entityManager.GetComponentData<ActiveWeapon>(req.PlayerEntity);
                 activeWeapon.WeaponEntity = newWeaponEntity;
                 activeWeapon.SelectedWeaponId = req.TargetWeaponId;
                 entityManager.SetComponentData(req.PlayerEntity, activeWeapon);
             }
         }
-
         changes.Dispose();
     }
 }
