@@ -5,11 +5,19 @@ using UnityEngine;
 
 public class WeaponAuthoringComponent : MonoBehaviour
 {
+    public GameObject ProjectileSpawner;
     class Baker : Baker<WeaponAuthoringComponent>
     {
         public override void Bake(WeaponAuthoringComponent authoring)
         {
             var entity = GetEntity(TransformUsageFlags.Dynamic);
+            var projectileSpawnerEntity = GetEntity(authoring.ProjectileSpawner, TransformUsageFlags.Dynamic);
+            AddComponent(entity, new WeaponData
+            {
+                ProjectileSpawner = projectileSpawnerEntity
+            });
+            
+
 
             //skala
             AddComponent(entity, new BaseScale { Value = authoring.transform.localScale });

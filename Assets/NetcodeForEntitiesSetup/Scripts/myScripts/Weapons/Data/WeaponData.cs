@@ -16,6 +16,12 @@ public struct WeaponOwner : IComponentData
     public Entity Entity;
 }
 
+[GhostComponent]
+public struct WeaponData : IComponentData
+{
+    [GhostField] public Entity ProjectileSpawner;
+}
+
 
 public struct WeaponResources : IComponentData
 {
