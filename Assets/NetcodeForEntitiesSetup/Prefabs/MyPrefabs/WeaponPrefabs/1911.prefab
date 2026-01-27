@@ -180,6 +180,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ProjectileSpawner: {fileID: 4736840797966849248}
+  maxAmmo: 200
   MagSize: 7
   FireRate: 0.5
   ReloadTime: 3

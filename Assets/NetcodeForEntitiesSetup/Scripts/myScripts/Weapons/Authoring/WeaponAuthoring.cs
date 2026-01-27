@@ -9,6 +9,7 @@ public class WeaponAuthoringComponent : MonoBehaviour
     public GameObject ProjectileSpawner;
 
     [Header("Weapon Stats")]
+    public int maxAmmo = 120;
     public int MagSize = 30;
     public float FireRate = 0.1f;
     public float ReloadTime = 2.0f;
@@ -33,7 +34,8 @@ public class WeaponAuthoringComponent : MonoBehaviour
                 fireRate = authoring.FireRate,
                 reloadTime = authoring.ReloadTime,
                 projectileSpeed = authoring.ProjectileSpeed,
-                damage = authoring.Damage
+                damage = authoring.Damage,
+                maxAmmo = authoring.maxAmmo
             });
 
             // Stan roboczy broni (timery)

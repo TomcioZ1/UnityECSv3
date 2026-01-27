@@ -227,7 +227,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5abff68093b9c446a043d7da59bc473, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  PistolPrefab: {fileID: 94142323708510295, guid: 956cae741c0c9f54f81e9f409ab679db, type: 3}
+  PistolPrefab: {fileID: 7207041853267252692, guid: 0bc36f94d7f19f04bb102c2579a0c94e, type: 3}
   ShotgunPrefab: {fileID: 0}
   SniperPrefab: {fileID: 4081835804056505871, guid: 3a60039b82c51594590e219e6295cffd, type: 3}
   AK47Prefab: {fileID: 6771186126289099720, guid: a590b8372288c3048b89d18ea7f1ace3, type: 3}

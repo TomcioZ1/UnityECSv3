@@ -9,23 +9,32 @@ using Unity.Transforms;
 [BurstCompile]
 public partial struct HandsSystem : ISystem
 {
+    // 1. Pole struktury dla Lookup
+    private ComponentLookup<LocalTransform> _transformLookup;
+
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        // 2. Inicjalizacja (false, bo piszemy do transformu)
+        _transformLookup = state.GetComponentLookup<LocalTransform>(false);
+    }
+
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         if (!SystemAPI.TryGetSingleton<NetworkTime>(out var networkTime)) return;
 
-        // U¿ywamy IsFinalPredictionTick, aby unikn¹æ jittera z rollbacków
         if (!networkTime.IsFinalPredictionTick) return;
 
         var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
 
+        // 3. Aktualizacja Lookup na pocz¹tku klatki
+        _transformLookup.Update(ref state);
+
         float dt = SystemAPI.Time.DeltaTime;
         float attackSpeed = 4f;
         float punchDistance = 0.25f;
-
-        // UWAGA: transformLookup nie mo¿e byæ ReadOnly (true), bo piszemy bezpoœrednio
-        var transformLookup = state.GetComponentLookup<LocalTransform>(false);
 
         // 1. LOGIKA ATAKU
         foreach (var (input, anim) in SystemAPI.Query<RefRO<Unity.Multiplayer.Center.NetcodeForEntitiesSetup.MyPlayerInput>, RefRW<HandAttackData>>().WithAll<Simulate>())
@@ -48,7 +57,7 @@ public partial struct HandsSystem : ISystem
             }
         }
 
-        // 2. WIZUALIZACJA (Bezpoœredni zapis do Transformu)
+        // 2. WIZUALIZACJA
         foreach (var (anim, socket, activeHands) in
                  SystemAPI.Query<RefRO<HandAttackData>, HandsSocket, RefRW<ActiveHands>>())
         {
@@ -65,30 +74,28 @@ public partial struct HandsSystem : ISystem
                 else rightOffset = new float3(-side, 0, fwd);
             }
 
-            // Przekazujemy transformLookup, aby pisaæ bezpoœrednio (p³ynniej ni¿ ECB)
-            UpdateHand(ref state, ecb, ref transformLookup, activeHands.ValueRO.LeftHandEntity, socket.LeftHandSocket, leftOffset, ref activeHands.ValueRW.PrevLeftHand);
-            UpdateHand(ref state, ecb, ref transformLookup, activeHands.ValueRO.RightHandEntity, socket.RightHandSocket, rightOffset, ref activeHands.ValueRW.PrevRightHand);
+            // Przekazujemy referencje do pól struktury
+            UpdateHand(ecb, activeHands.ValueRO.LeftHandEntity, socket.LeftHandSocket, leftOffset, ref activeHands.ValueRW.PrevLeftHand);
+            UpdateHand(ecb, activeHands.ValueRO.RightHandEntity, socket.RightHandSocket, rightOffset, ref activeHands.ValueRW.PrevRightHand);
         }
     }
 
     [BurstCompile]
-    private void UpdateHand(ref SystemState state, EntityCommandBuffer ecb, ref ComponentLookup<LocalTransform> transformLookup, Entity hand, Entity socket, float3 offset, ref Entity prevHand)
+    private void UpdateHand(EntityCommandBuffer ecb, Entity hand, Entity socket, float3 offset, ref Entity prevHand)
     {
-        if (hand == Entity.Null || !state.EntityManager.Exists(hand) || !transformLookup.HasComponent(hand)) return;
+        // U¿ywamy zaktualizowanego _transformLookup zamiast state.EntityManager
+        if (hand == Entity.Null || !_transformLookup.HasComponent(hand)) return;
 
-        // Parenting musi zostaæ w ECB (Structural Change)
         if (hand != prevHand)
         {
-            if (state.EntityManager.Exists(socket))
-            {
-                ecb.AddComponent(hand, new Parent { Value = socket });
-                prevHand = hand;
-            }
+            // Parenting w ECB
+            ecb.AddComponent(hand, new Parent { Value = socket });
+            prevHand = hand;
         }
 
-        // Pisanie bezpoœrednie (Direct Write) eliminuje 1 klatkê opóŸnienia z ECB
-        var lt = transformLookup[hand];
+        // Bezpoœredni zapis do transformu
+        var lt = _transformLookup[hand];
         lt.Position = offset;
-        transformLookup[hand] = lt;
+        _transformLookup[hand] = lt;
     }
 }

@@ -9,6 +9,17 @@ using Unity.Transforms;
 [BurstCompile]
 public partial struct ActiveWeaponSystem : ISystem
 {
+    // 1. Deklarujemy Lookup jako pole struktury
+    private ComponentLookup<LocalTransform> _transformLookup;
+
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        // 2. Inicjalizujemy Lookup raz przy starcie systemu
+        // true oznacza read-only (szybsze)
+        _transformLookup = state.GetComponentLookup<LocalTransform>(true);
+    }
+
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
@@ -18,8 +29,8 @@ public partial struct ActiveWeaponSystem : ISystem
         var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
 
-        // Potrzebujemy dostêpu do komponentów transformacji broni
-        var transformLookup = state.GetComponentLookup<LocalTransform>(true);
+        // 3. KLUCZOWE: Aktualizujemy stan Lookup na pocz¹tku ka¿dej klatki
+        _transformLookup.Update(ref state);
 
         foreach (var (activeWeapon, socket, entity) in
                  SystemAPI.Query<RefRW<ActiveWeapon>, WeaponSocket>()
@@ -32,15 +43,16 @@ public partial struct ActiveWeaponSystem : ISystem
 
             if (newWeapon != activeWeapon.ValueRO.PreviousWeaponEntity)
             {
-                if (newWeapon != Entity.Null && transformLookup.HasComponent(newWeapon))
+                // U¿ywamy zaktualizowanego pola _transformLookup
+                if (newWeapon != Entity.Null && _transformLookup.HasComponent(newWeapon))
                 {
-                    // 1. Pobieramy aktualny transform broni (z prefaba)
-                    var weaponTransform = transformLookup[newWeapon];
+                    // 1. Pobieramy aktualny transform broni
+                    var weaponTransform = _transformLookup[newWeapon];
 
-                    // 2. Zerujemy TYLKO pozycjê, zostawiaj¹c rotacjê i skalê z prefaba
+                    // 2. Zerujemy pozycjê (relatywnie do socketu)
                     weaponTransform.Position = float3.zero;
 
-                    // 3. Aplikujemy do ECB
+                    // 3. Aplikujemy zmiany
                     ecb.AddComponent(newWeapon, new Parent { Value = socket.WeaponSocketEntity });
                     ecb.SetComponent(newWeapon, weaponTransform);
 

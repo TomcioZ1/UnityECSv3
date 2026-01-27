@@ -23,6 +23,7 @@ public struct WeaponData : IComponentData
 
     [GhostField] public int magSize;
     [GhostField] public int currentAmmo;
+    [GhostField] public int maxAmmo;
     [GhostField] public float fireRate;
     [GhostField] public float reloadTime;
     [GhostField] public float projectileSpeed;

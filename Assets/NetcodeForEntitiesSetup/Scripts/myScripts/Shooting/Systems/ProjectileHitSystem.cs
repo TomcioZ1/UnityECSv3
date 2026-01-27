@@ -10,15 +10,18 @@ using Unity.Transforms;
 public partial struct ProjectileHitSystem : ISystem
 {
     private EntityQuery _targetQuery;
+    // 1. Deklarujemy Lookup jako pole struktury
+    private ComponentLookup<HealthComponent> _healthLookup;
 
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        // ROZWI¥ZANIE B£ÊDU BC1028: 
-        // U¿ywamy EntityQueryBuilder z Allocator.Temp, co jest wspierane przez Burst.
         _targetQuery = new EntityQueryBuilder(Allocator.Temp)
             .WithAll<HealthComponent, LocalTransform>()
             .Build(ref state);
+
+        // 2. Inicjalizujemy Lookup w OnCreate
+        _healthLookup = state.GetComponentLookup<HealthComponent>(false);
 
         state.RequireForUpdate<NetworkTime>();
     }
@@ -29,23 +32,22 @@ public partial struct ProjectileHitSystem : ISystem
         var networkTime = SystemAPI.GetSingleton<NetworkTime>();
         if (!networkTime.IsFirstTimeFullyPredictingTick) return;
 
-        // Pobieramy dane do NativeArray (Allocator.TempJob dla bezpieczeñstwa Jobów)
+        // 3. KLUCZOWE: Aktualizujemy stan Lookup na pocz¹tku OnUpdate
+        _healthLookup.Update(ref state);
+
         var targetEntities = _targetQuery.ToEntityArray(Allocator.TempJob);
         var targetTransforms = _targetQuery.ToComponentDataArray<LocalTransform>(Allocator.TempJob);
-
-        var healthLookup = state.GetComponentLookup<HealthComponent>(false);
 
         var hitJob = new ProjectileHitJob
         {
             TargetEntities = targetEntities,
             TargetTransforms = targetTransforms,
-            HealthLookup = healthLookup,
+            // Przekazujemy zaktualizowany lookup do Joba
+            HealthLookup = _healthLookup,
         };
 
-        // Uruchomienie równoleg³e na wielu rdzeniach
         state.Dependency = hitJob.ScheduleParallel(state.Dependency);
 
-        // Zwolnienie tablic dopiero po zakoñczeniu Joba
         targetEntities.Dispose(state.Dependency);
         targetTransforms.Dispose(state.Dependency);
     }
@@ -57,6 +59,7 @@ public partial struct ProjectileHitJob : IJobEntity
     [ReadOnly] public NativeArray<Entity> TargetEntities;
     [ReadOnly] public NativeArray<LocalTransform> TargetTransforms;
 
+    // To pozostaje bez zmian - pozwala na zapis w Jobie równoleg³ym
     [NativeDisableParallelForRestriction]
     public ComponentLookup<HealthComponent> HealthLookup;
 
@@ -70,7 +73,6 @@ public partial struct ProjectileHitJob : IJobEntity
         for (int i = 0; i < TargetEntities.Length; i++)
         {
             Entity targetEntity = TargetEntities[i];
-
             if (targetEntity == owner) continue;
 
             if (math.distancesq(projPos, TargetTransforms[i].Position) <= 0.2f)

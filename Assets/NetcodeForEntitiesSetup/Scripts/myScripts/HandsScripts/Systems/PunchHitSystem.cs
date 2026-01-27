@@ -12,24 +12,36 @@ using UnityEngine;
 [BurstCompile]
 public partial struct PunchHitSystem : ISystem
 {
+    // 1. Deklarujemy pola Lookup i Query jako pola struktury
+    private ComponentLookup<HealthComponent> _healthLookup;
+    private EntityQuery _targetsQuery;
+
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        // 2. Inicjalizujemy Lookup (false = chcemy zapisywaæ punkty ¿ycia)
+        _healthLookup = state.GetComponentLookup<HealthComponent>(false);
+
+        // 3. Budujemy zapytanie raz w OnCreate
+        _targetsQuery = new EntityQueryBuilder(Allocator.Temp)
+            .WithAll<HealthComponent, LocalToWorld>()
+            .Build(ref state);
+
+        state.RequireForUpdate<NetworkTime>();
+    }
+
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        // 1. Pobieramy lookup komponentów (z mo¿liwoœci¹ zapisu dla HealthComponent)
-        var healthLookup = state.GetComponentLookup<HealthComponent>(false);
+        // 4. KLUCZOWE: Aktualizujemy stan Lookup na pocz¹tku klatki
+        _healthLookup.Update(ref state);
 
-        // 2. Budujemy zapytanie o cele
-        var targetsQuery = SystemAPI.QueryBuilder()
-            .WithAll<HealthComponent, LocalToWorld>()
-            .Build();
-
-        // 3. Pobieramy dane celów
-        var allTargets = targetsQuery.ToEntityArray(Allocator.Temp);
-        var allTargetTransforms = targetsQuery.ToComponentDataArray<LocalToWorld>(Allocator.Temp);
+        // U¿ywamy Allocator.Temp dla tablic, które ¿yj¹ tylko w jednej klatce
+        var allTargets = _targetsQuery.ToEntityArray(Allocator.Temp);
+        var allTargetTransforms = _targetsQuery.ToComponentDataArray<LocalToWorld>(Allocator.Temp);
 
         if (allTargets.Length <= 1) return;
 
-        // 4. G³ówna pêtla atakuj¹cych
         foreach (var (anim, ltw, playerEntity) in
                  SystemAPI.Query<RefRW<HandAttackData>, RefRO<LocalToWorld>>()
                  .WithEntityAccess())
@@ -59,19 +71,17 @@ public partial struct PunchHitSystem : ISystem
 
                         if (dot > hitAngleThreshold)
                         {
-                            // --- LOGIKA TRAFIENIA Z LAST HIT BY ---
-                            var hp = healthLookup[targetEntity];
+                            // U¿ywamy zaktualizowanego pola _healthLookup
+                            var hp = _healthLookup[targetEntity];
                             hp.HealthPoints -= anim.ValueRO.AttackDamage;
-
-                            // PRZYPISANIE ZABÓJCY:
                             hp.LastHitBy = playerEntity;
 
-                            healthLookup[targetEntity] = hp;
+                            _healthLookup[targetEntity] = hp;
 
                             anim.ValueRW.HasAppliedDamage = true;
                             hitFound = true;
 
-                            Debug.Log($"<color=red>PUNCH HIT!</color> {playerEntity.Index} hit {targetEntity.Index}. HP left: {hp.HealthPoints}");
+                            //Debug.Log($"<color=red>PUNCH HIT!</color> {playerEntity.Index} hit {targetEntity.Index}. HP left: {hp.HealthPoints}");
                             break;
                         }
                     }
