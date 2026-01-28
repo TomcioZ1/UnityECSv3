@@ -1,6 +1,7 @@
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Multiplayer.Center.NetcodeForEntitiesSetup;
 using Unity.NetCode;
 using Unity.Transforms;
 
@@ -37,17 +38,36 @@ public partial struct HandsSystem : ISystem
         float punchDistance = 0.25f;
 
         // 1. LOGIKA ATAKU
-        foreach (var (input, anim) in SystemAPI.Query<RefRO<Unity.Multiplayer.Center.NetcodeForEntitiesSetup.MyPlayerInput>, RefRW<HandAttackData>>().WithAll<Simulate>())
+        // Dodaj PlayerInventory do zapytania
+        foreach (var (input, anim, inventory) in
+                 SystemAPI.Query<RefRO<MyPlayerInput>, RefRW<HandAttackData>, RefRO<PlayerInventory>>()
+                 .WithAll<Simulate>())
         {
-            if (input.ValueRO.choosenWeapon == 3 && input.ValueRO.leftMouseButton == 1 && !anim.ValueRO.IsAttacking)
+            // 1. Sprawdzamy, czy na wybranym slocie jest jakakolwiek broñ
+            byte activeSlot = inventory.ValueRO.ActiveSlotIndex;
+            bool hasWeaponInSlot = activeSlot switch
+            {
+                1 => inventory.ValueRO.Slot1_WeaponId > 0,
+                2 => inventory.ValueRO.Slot2_WeaponId > 0,
+                3 => inventory.ValueRO.Slot3_HandsId > 0, // Zazwyczaj rêce maj¹ ID 0 lub 3, sprawdŸ swoje ID
+                4 => inventory.ValueRO.Slot4_GrenadeId > 0,
+                _ => false
+            };
+
+            // 2. Warunek ataku: 
+            // Lewy przycisk myszy ORAZ (Slot z rêkami LUB pusty slot broni)
+            bool canPunch = input.ValueRO.leftMouseButton == 1 && !hasWeaponInSlot;
+
+            if (canPunch && !anim.ValueRO.IsAttacking)
             {
                 anim.ValueRW.IsAttacking = true;
                 anim.ValueRW.AttackProgress = 0f;
             }
 
+            // Reszta logiki animacji pozostaje bez zmian
             if (anim.ValueRO.IsAttacking)
             {
-                anim.ValueRW.AttackProgress += dt * attackSpeed;
+                anim.ValueRW.AttackProgress += SystemAPI.Time.DeltaTime * attackSpeed;
                 if (anim.ValueRO.AttackProgress >= 1f)
                 {
                     anim.ValueRW.IsAttacking = false;

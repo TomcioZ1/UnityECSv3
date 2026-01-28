@@ -8,7 +8,6 @@ using Unity.Transforms;
 [BurstCompile]
 public partial struct WeaponVisibilitySystem : ISystem
 {
-    // 1. Deklarujemy pola Lookup jako pola struktury
     private ComponentLookup<BaseScale> _baseScaleLookup;
     private ComponentLookup<PostTransformMatrix> _postMatrixLookup;
     private ComponentLookup<LocalTransform> _transformLookup;
@@ -16,7 +15,6 @@ public partial struct WeaponVisibilitySystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        // 2. Inicjalizujemy Lookup w OnCreate
         _baseScaleLookup = state.GetComponentLookup<BaseScale>(true);
         _postMatrixLookup = state.GetComponentLookup<PostTransformMatrix>(false);
         _transformLookup = state.GetComponentLookup<LocalTransform>(false);
@@ -25,25 +23,44 @@ public partial struct WeaponVisibilitySystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        // 3. Aktualizujemy stan Lookup na pocz¹tku OnUpdate
         _baseScaleLookup.Update(ref state);
         _postMatrixLookup.Update(ref state);
         _transformLookup.Update(ref state);
 
-        foreach (var (activeWeapon, activeHands) in
-                 SystemAPI.Query<RefRO<ActiveWeapon>, RefRO<ActiveHands>>())
+        foreach (var (inventory, activeHands) in
+                 SystemAPI.Query<RefRO<PlayerInventory>, RefRO<ActiveHands>>())
         {
-            byte choice = activeWeapon.ValueRO.SelectedWeaponId;
-            bool weaponVisible = (choice == 1 || choice == 2);
-            bool handsVisible = (choice == 3);
+            byte activeSlot = inventory.ValueRO.ActiveSlotIndex;
 
-            if (activeWeapon.ValueRO.WeaponEntity != Entity.Null && activeWeapon.ValueRO.WeaponEntity.Index >= 0)
-                UpdateVisibility(activeWeapon.ValueRO.WeaponEntity, weaponVisible);
+            // Sprawdzamy, czy na aktualnym slocie (1 lub 2) faktycznie mamy broñ (ID > 0)
+            bool hasWeaponInActiveSlot = activeSlot switch
+            {
+                1 => inventory.ValueRO.Slot1_WeaponId > 0,
+                2 => inventory.ValueRO.Slot2_WeaponId > 0,
+                4 => inventory.ValueRO.Slot4_GrenadeId > 0,
+                _ => false
+            };
 
-            if (activeHands.ValueRO.LeftHandEntity != Entity.Null && activeHands.ValueRO.LeftHandEntity.Index >= 0)
+            // LOGIKA WIDOCZNOŒCI:
+            // 1. Model broni widoczny tylko gdy: wybrany slot broni (1,2,4) ORAZ mamy tam przypisane ID
+            bool weaponModelVisible = (activeSlot == 1 || activeSlot == 2 || activeSlot == 4) && hasWeaponInActiveSlot;
+
+            // 2. Rêce widoczne gdy:
+            // - Wybrany slot 3 (dedykowane rêce)
+            // - LUB wybrany slot broni (1,2,4), ale ten slot jest PUSTY (brak broni)
+            bool handsVisible = (activeSlot == 3) || ((activeSlot == 1 || activeSlot == 2 || activeSlot == 4) && !hasWeaponInActiveSlot);
+
+            // Aktualizacja modelu broni
+            if (inventory.ValueRO.CurrentWeaponEntity != Entity.Null)
+            {
+                UpdateVisibility(inventory.ValueRO.CurrentWeaponEntity, weaponModelVisible);
+            }
+
+            // Aktualizacja r¹k
+            if (activeHands.ValueRO.LeftHandEntity != Entity.Null)
                 UpdateVisibility(activeHands.ValueRO.LeftHandEntity, handsVisible);
 
-            if (activeHands.ValueRO.RightHandEntity != Entity.Null && activeHands.ValueRO.RightHandEntity.Index >= 0)
+            if (activeHands.ValueRO.RightHandEntity != Entity.Null)
                 UpdateVisibility(activeHands.ValueRO.RightHandEntity, handsVisible);
         }
     }
@@ -51,19 +68,26 @@ public partial struct WeaponVisibilitySystem : ISystem
     [BurstCompile]
     private void UpdateVisibility(Entity e, bool isVisible)
     {
-        // U¿ywamy pól klasy bezpoœrednio (bez przekazywania ich przez parametry)
+        // Sprawdzamy czy encja jest poprawna (nie jest w stanie "deferred")
+        if (e == Entity.Null || e.Index < 0) return;
         if (!_transformLookup.HasComponent(e) || !_baseScaleLookup.HasComponent(e)) return;
 
         float3 originalScale = _baseScaleLookup[e].Value;
-
         var trans = _transformLookup[e];
-        trans.Scale = isVisible ? math.max(originalScale.x, math.max(originalScale.y, originalScale.z)) : 0.0001f;
-        _transformLookup[e] = trans;
+
+        // Ukrywamy ustawiaj¹c skalê na 0 (lub prawie 0)
+        float targetUniformScale = isVisible ? math.max(originalScale.x, math.max(originalScale.y, originalScale.z)) : 0f;
+
+        if (trans.Scale != targetUniformScale)
+        {
+            trans.Scale = targetUniformScale;
+            _transformLookup[e] = trans;
+        }
 
         if (_postMatrixLookup.HasComponent(e))
         {
-            float3 currentTargetScale = isVisible ? originalScale : new float3(0.0001f);
-            _postMatrixLookup[e] = new PostTransformMatrix { Value = float4x4.Scale(currentTargetScale) };
+            float3 targetScale3D = isVisible ? originalScale : float3.zero;
+            _postMatrixLookup[e] = new PostTransformMatrix { Value = float4x4.Scale(targetScale3D) };
         }
     }
 }

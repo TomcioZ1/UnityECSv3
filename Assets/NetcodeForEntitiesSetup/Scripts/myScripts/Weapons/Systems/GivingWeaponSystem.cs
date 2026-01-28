@@ -1,116 +1,99 @@
 using Unity.Burst;
-using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 using Unity.Multiplayer.Center.NetcodeForEntitiesSetup;
 using Unity.NetCode;
 using Unity.Transforms;
-using Unity.Mathematics;
 
 [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [BurstCompile]
 public partial struct WeaponControlSystem : ISystem
 {
-    private struct WeaponChangeRequest
-    {
-        public Entity PlayerEntity;
-        public Entity OldWeaponEntity;
-        public Entity WeaponSocket;
-        public byte TargetWeaponId;
-        public int NetworkId;
-    }
-
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         if (!SystemAPI.TryGetSingleton<WeaponResources>(out var resources)) return;
 
-        var changes = new NativeList<WeaponChangeRequest>(Allocator.Temp);
+        // U¿ywamy EndSimulation, aby mieæ pewnoœæ, ¿e wszystko zostanie zrealizowane przed nastêpn¹ klatk¹ Netcode
+        var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
+            .CreateCommandBuffer(state.WorldUnmanaged);
 
-        foreach (var (activeWeapon, input, socket, playerEntity) in
-                 SystemAPI.Query<RefRO<ActiveWeapon>, RefRO<MyPlayerInput>, RefRO<WeaponSocket>>()
+        var ghostOwnerLookup = state.GetComponentLookup<GhostOwner>(true);
+
+        foreach (var (inventory, input, socket, playerEntity) in
+                 SystemAPI.Query<RefRW<PlayerInventory>, RefRO<MyPlayerInput>, RefRO<WeaponSocket>>()
                  .WithEntityAccess())
         {
-            byte currentId = activeWeapon.ValueRO.SelectedWeaponId;
-            byte inputId = input.ValueRO.choosenWeapon;
-            byte targetId = currentId;
-
-            if (currentId == 0 && inputId == 0) targetId = 1;
-            else if (inputId != 0 && inputId != currentId) targetId = inputId;
-
-            if (targetId != currentId)
+            // 1. Aktualizacja slotu
+            if (input.ValueRO.choosenWeapon >= 1 && input.ValueRO.choosenWeapon <= 4)
             {
-                int netId = 0;
-                if (SystemAPI.HasComponent<GhostOwner>(playerEntity))
-                {
-                    netId = SystemAPI.GetComponent<GhostOwner>(playerEntity).NetworkId;
-                }
-
-                changes.Add(new WeaponChangeRequest
-                {
-                    PlayerEntity = playerEntity,
-                    OldWeaponEntity = activeWeapon.ValueRO.WeaponEntity,
-                    WeaponSocket = socket.ValueRO.WeaponSocketEntity,
-                    TargetWeaponId = targetId,
-                    NetworkId = netId
-                });
+                inventory.ValueRW.ActiveSlotIndex = input.ValueRO.choosenWeapon;
             }
-        }
 
-        if (changes.Length > 0)
-        {
-            var entityManager = state.EntityManager;
-
-            foreach (var req in changes)
+            // 2. Wyznaczenie ID broni
+            byte targetWeaponId = inventory.ValueRO.ActiveSlotIndex switch
             {
-                // A. Usuwanie starej broni
-                if (req.OldWeaponEntity != Entity.Null && entityManager.Exists(req.OldWeaponEntity))
+                1 => inventory.ValueRO.Slot1_WeaponId,
+                2 => inventory.ValueRO.Slot2_WeaponId,
+                3 => inventory.ValueRO.Slot3_HandsId,
+                4 => inventory.ValueRO.Slot4_GrenadeId,
+                _ => 0
+            };
+
+            // 3. Logika zmiany
+            if (targetWeaponId != inventory.ValueRO.CurrentlySpawnedWeaponId)
+            {
+                // Usuwamy star¹ broñ
+                if (inventory.ValueRO.CurrentWeaponEntity != Entity.Null)
                 {
-                    entityManager.DestroyEntity(req.OldWeaponEntity);
+                    ecb.DestroyEntity(inventory.ValueRO.CurrentWeaponEntity);
                 }
 
-                // B. Wybór prefaba
-                Entity prefabToSpawn = req.TargetWeaponId switch
+                Entity prefabToSpawn = targetWeaponId switch
                 {
                     1 => resources.Pistol,
                     2 => resources.Shotgun,
                     3 => resources.ak47,
-                    4 => resources.Sniper,
+                    4 => resources.m4a1,
+                    5 => resources.mp5,
+                    6 => resources.uzi,
+                    7 => resources.gun,
+                    8 => resources.awp,
+                    9 => resources.PKM,
                     _ => Entity.Null
                 };
 
-                Entity newWeaponEntity = Entity.Null;
+                // Tworzymy now¹ instancjê inwentarza do nadpisania przez ECB
+                var updatedInventory = inventory.ValueRO;
+                updatedInventory.CurrentlySpawnedWeaponId = targetWeaponId;
 
                 if (prefabToSpawn != Entity.Null)
                 {
-                    newWeaponEntity = entityManager.Instantiate(prefabToSpawn);
+                    Entity newWeaponSpawned = ecb.Instantiate(prefabToSpawn);
 
-                    // --- KLUCZ DO SKALI (0.3, 0.1, 0.1) ---
-                    // Pobieramy CA£Y transform z prefaba, który ma w sobie poprawne dane o skali
-                    LocalTransform prefabTransform = entityManager.GetComponentData<LocalTransform>(prefabToSpawn);
+                    ecb.AddComponent(newWeaponSpawned, new Parent { Value = socket.ValueRO.WeaponSocketEntity });
 
-                    // Zerujemy pozycjê, ¿eby broñ by³a w punkcie socketu, ale zostawiamy rotacjê i skalê
-                    prefabTransform.Position = float3.zero;
+                    if (ghostOwnerLookup.HasComponent(playerEntity))
+                    {
+                        var playerOwner = ghostOwnerLookup[playerEntity];
+                        ecb.SetComponent(newWeaponSpawned, new GhostOwner { NetworkId = playerOwner.NetworkId });
+                    }
 
-                    entityManager.SetComponentData(newWeaponEntity, new GhostOwner { NetworkId = req.NetworkId });
-                    entityManager.SetComponentData(newWeaponEntity, new WeaponOwner { Entity = req.PlayerEntity });
+                    ecb.AppendToBuffer(playerEntity, new LinkedEntityGroup { Value = newWeaponSpawned });
+                    ecb.AddComponent(newWeaponSpawned, new WeaponOwner { Entity = playerEntity });
 
-                    // Ustawienie hierarchii
-                    if (!entityManager.HasComponent<Parent>(newWeaponEntity))
-                        entityManager.AddComponentData(newWeaponEntity, new Parent { Value = req.WeaponSocket });
-                    else
-                        entityManager.SetComponentData(newWeaponEntity, new Parent { Value = req.WeaponSocket });
-
-                    // Aplikujemy transform (pozycja 0, skala z prefaba)
-                    entityManager.SetComponentData(newWeaponEntity, prefabTransform);
+                    // KLUCZ: Przypisujemy encjê przez ECB, a nie bezpoœrednio!
+                    updatedInventory.CurrentWeaponEntity = newWeaponSpawned;
+                }
+                else
+                {
+                    updatedInventory.CurrentWeaponEntity = Entity.Null;
                 }
 
-                var activeWeapon = entityManager.GetComponentData<ActiveWeapon>(req.PlayerEntity);
-                activeWeapon.WeaponEntity = newWeaponEntity;
-                activeWeapon.SelectedWeaponId = req.TargetWeaponId;
-                entityManager.SetComponentData(req.PlayerEntity, activeWeapon);
+                // Aktualizujemy ca³y komponent inwentarza przez ECB
+                ecb.SetComponent(playerEntity, updatedInventory);
             }
         }
-        changes.Dispose();
     }
 }

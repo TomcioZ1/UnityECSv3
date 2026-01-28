@@ -9,7 +9,6 @@ using Unity.Transforms;
 [BurstCompile]
 public partial struct ProjectileSpawnSystem : ISystem
 {
-    // Deklarujemy lookupy jako pola
     private ComponentLookup<WeaponData> weaponDataLookup;
     private ComponentLookup<WeaponWorkState> weaponStateLookup;
     private ComponentLookup<NetworkId> networkIdLookup;
@@ -19,7 +18,6 @@ public partial struct ProjectileSpawnSystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        // Inicjalizacja lookupów
         weaponDataLookup = state.GetComponentLookup<WeaponData>(false);
         weaponStateLookup = state.GetComponentLookup<WeaponWorkState>(false);
         networkIdLookup = state.GetComponentLookup<NetworkId>(true);
@@ -34,7 +32,6 @@ public partial struct ProjectileSpawnSystem : ISystem
     {
         if (!SystemAPI.TryGetSingleton<ProjectilePrefab>(out var prefab)) return;
 
-        // Odœwie¿anie lookupów w ka¿dej klatce
         weaponDataLookup.Update(ref state);
         weaponStateLookup.Update(ref state);
         networkIdLookup.Update(ref state);
@@ -46,19 +43,19 @@ public partial struct ProjectileSpawnSystem : ISystem
 
         double currentTime = SystemAPI.Time.ElapsedTime;
 
-        // Query: szukamy graczy, którzy maj¹ wejœcie (input) i aktywn¹ broñ
-        foreach (var (input, activeWeapon, playerEntity) in
-                 SystemAPI.Query<RefRO<MyPlayerInput>, RefRO<ActiveWeapon>>()
+        // ZMIANA: Szukamy PlayerInventory zamiast ActiveWeapon
+        foreach (var (input, inventory, playerEntity) in
+                 SystemAPI.Query<RefRO<MyPlayerInput>, RefRO<PlayerInventory>>()
                  .WithAll<Simulate>()
                  .WithEntityAccess())
         {
-            // Pominiecie ID 0 i 3 (wg Twojej logiki)
-            if (activeWeapon.ValueRO.SelectedWeaponId == 0 || activeWeapon.ValueRO.SelectedWeaponId == 3)
+            // Pominiecie r¹k (Slot 3) lub gdy gracz nie ma nic w d³oni
+            if (inventory.ValueRO.ActiveSlotIndex == 3 || inventory.ValueRO.CurrentlySpawnedWeaponId == 0)
                 continue;
 
-            Entity wEntity = activeWeapon.ValueRO.WeaponEntity;
+            // Pobieramy encjê aktualnie trzymanej broni z inwentarza
+            Entity wEntity = inventory.ValueRO.CurrentWeaponEntity;
 
-            // Walidacja encji broni
             if (wEntity == Entity.Null || !weaponDataLookup.HasComponent(wEntity) || !weaponStateLookup.HasComponent(wEntity))
                 continue;
 
@@ -70,7 +67,6 @@ public partial struct ProjectileSpawnSystem : ISystem
             // Logika strza³u
             if (input.ValueRO.leftMouseButton == 1 && !wState.IsReloading && weapon.currentAmmo > 0 && currentTime >= wState.NextShotTime)
             {
-                // Aktualizacja amunicji i czasu nastêpnego strza³u
                 weapon.currentAmmo--;
                 weapon.maxAmmo--;
                 wState.NextShotTime = (float)currentTime + weapon.fireRate;
@@ -82,21 +78,16 @@ public partial struct ProjectileSpawnSystem : ISystem
                 {
                     var spawnerLTW = ltwLookup[weapon.ProjectileSpawner];
 
-                    // INSTANCJONOWANIE POCISKU
                     Entity projectile = ecb.Instantiate(prefab.Value);
 
-                    // --- KLUCZOWE DLA OWNER PREDICTION ---
-                    // Musimy pobraæ NetworkId gracza (playerEntity) i przypisaæ go do GhostOwner
                     if (networkIdLookup.TryGetComponent(playerEntity, out var netId))
                     {
                         ecb.SetComponent(projectile, new GhostOwner { NetworkId = netId.Value });
                     }
                     else
                     {
-                        // Jeœli system nie znajdzie NetworkId, ustawiamy -1 (np. dla NPC lub serwera)
                         ecb.SetComponent(projectile, new GhostOwner { NetworkId = -1 });
                     }
-                    // -------------------------------------
 
                     float3 direction = input.ValueRO.AimDirection;
                     if (math.all(direction == 0)) direction = new float3(0, 0, 1);
@@ -106,7 +97,6 @@ public partial struct ProjectileSpawnSystem : ISystem
                         quaternion.LookRotationSafe(direction, math.up())
                     );
 
-                    // Ustawienie skali z prefabu
                     transform.Scale = ltLookup.HasComponent(prefab.Value) ? ltLookup[prefab.Value].Scale : 1.0f;
 
                     ecb.SetComponent(projectile, transform);

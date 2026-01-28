@@ -27,7 +27,8 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                     HealthPoints = 100
                 });
 
-                AddComponent(entity, new ActiveWeapon { });
+                AddComponent(entity, new PlayerInventory { });
+
                 AddComponent(entity, new WeaponSocket
                 {
                     WeaponSocketEntity = GetEntity(authoring.WeaponSocket, TransformUsageFlags.Dynamic)

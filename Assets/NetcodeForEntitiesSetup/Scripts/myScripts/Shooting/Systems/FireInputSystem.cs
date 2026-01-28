@@ -43,7 +43,7 @@ public partial class FireInputSystem : SystemBase
         {
             if (input.ValueRO.leftMouseButton != 0)
             {
-                
+
                 // Obliczamy kierunek
                 float3 direction = worldMousePoint - transform.ValueRO.Position;
                 direction.y = 0;
@@ -53,7 +53,7 @@ public partial class FireInputSystem : SystemBase
                 {
                     input.ValueRW.AimDirection = math.normalize(direction);
                 }
-                
+
             }
 
         }
