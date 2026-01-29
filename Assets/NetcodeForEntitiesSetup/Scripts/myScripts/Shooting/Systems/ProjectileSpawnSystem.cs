@@ -25,6 +25,7 @@ public partial struct ProjectileSpawnSystem : ISystem
         ltLookup = state.GetComponentLookup<LocalTransform>(true);
 
         state.RequireForUpdate<ProjectilePrefab>();
+        state.RequireForUpdate<BeginSimulationEntityCommandBufferSystem.Singleton>();
     }
 
     [BurstCompile]
@@ -32,6 +33,7 @@ public partial struct ProjectileSpawnSystem : ISystem
     {
         if (!SystemAPI.TryGetSingleton<ProjectilePrefab>(out var prefab)) return;
 
+        // Aktualizacja lookupów
         weaponDataLookup.Update(ref state);
         weaponStateLookup.Update(ref state);
         networkIdLookup.Update(ref state);
@@ -43,17 +45,15 @@ public partial struct ProjectileSpawnSystem : ISystem
 
         double currentTime = SystemAPI.Time.ElapsedTime;
 
-        // ZMIANA: Szukamy PlayerInventory zamiast ActiveWeapon
         foreach (var (input, inventory, playerEntity) in
                  SystemAPI.Query<RefRO<MyPlayerInput>, RefRO<PlayerInventory>>()
                  .WithAll<Simulate>()
                  .WithEntityAccess())
         {
-            // Pominiecie r¹k (Slot 3) lub gdy gracz nie ma nic w d³oni
+            // Podstawowe filtry
             if (inventory.ValueRO.ActiveSlotIndex == 3 || inventory.ValueRO.CurrentlySpawnedWeaponId == 0)
                 continue;
 
-            // Pobieramy encjê aktualnie trzymanej broni z inwentarza
             Entity wEntity = inventory.ValueRO.CurrentWeaponEntity;
 
             if (wEntity == Entity.Null || !weaponDataLookup.HasComponent(wEntity) || !weaponStateLookup.HasComponent(wEntity))
@@ -62,13 +62,11 @@ public partial struct ProjectileSpawnSystem : ISystem
             var weapon = weaponDataLookup[wEntity];
             var wState = weaponStateLookup[wEntity];
 
-            if (weapon.maxAmmo <= 0) continue;
-
-            // Logika strza³u
+            // 1. LOGIKA STRZA£U
             if (input.ValueRO.leftMouseButton == 1 && !wState.IsReloading && weapon.currentAmmo > 0 && currentTime >= wState.NextShotTime)
             {
+                // Aktualizacja stanu broni
                 weapon.currentAmmo--;
-                weapon.maxAmmo--;
                 wState.NextShotTime = (float)currentTime + weapon.fireRate;
 
                 weaponDataLookup[wEntity] = weapon;
@@ -77,41 +75,38 @@ public partial struct ProjectileSpawnSystem : ISystem
                 if (weapon.ProjectileSpawner != Entity.Null && ltwLookup.HasComponent(weapon.ProjectileSpawner))
                 {
                     var spawnerLTW = ltwLookup[weapon.ProjectileSpawner];
-
                     Entity projectile = ecb.Instantiate(prefab.Value);
 
+                    // Ustawienie w³aœciciela (GhostOwner) dla Netcode
+                    int ownerNetId = -1;
                     if (networkIdLookup.TryGetComponent(playerEntity, out var netId))
-                    {
-                        ecb.SetComponent(projectile, new GhostOwner { NetworkId = netId.Value });
-                    }
-                    else
-                    {
-                        ecb.SetComponent(projectile, new GhostOwner { NetworkId = -1 });
-                    }
+                        ownerNetId = netId.Value;
 
+                    ecb.SetComponent(projectile, new GhostOwner { NetworkId = ownerNetId });
+
+                    // Kierunek i rotacja
                     float3 direction = input.ValueRO.AimDirection;
                     if (math.all(direction == 0)) direction = new float3(0, 0, 1);
 
-                    var transform = LocalTransform.FromPositionRotation(
-                        spawnerLTW.Position,
-                        quaternion.LookRotationSafe(direction, math.up())
-                    );
+                    var rotation = quaternion.LookRotationSafe(direction, math.up());
 
-                    transform.Scale = ltLookup.HasComponent(prefab.Value) ? ltLookup[prefab.Value].Scale : 1.0f;
+                    // Transformacja startowa
+                    float prefabScale = ltLookup.HasComponent(prefab.Value) ? ltLookup[prefab.Value].Scale : 1.0f;
+                    ecb.SetComponent(projectile, LocalTransform.FromPositionRotationScale(spawnerLTW.Position, rotation, prefabScale));
 
-                    ecb.SetComponent(projectile, transform);
+                    // NOWA LOGIKA: ProjectileComponent z DeathTime
                     ecb.SetComponent(projectile, new ProjectileComponent
                     {
                         Damage = weapon.damage,
                         Velocity = direction * weapon.projectileSpeed,
-                        Lifetime = 3.0f,
+                        DeathTime = currentTime + 3.0, // Pocisk zginie dok³adnie za 3 sekundy od teraz
                         Owner = playerEntity
                     });
                 }
             }
 
-            // Logika prze³adowania
-            if (weapon.currentAmmo <= 0 && !wState.IsReloading)
+            // 2. LOGIKA PRZE£ADOWANIA (Uproszczona: tylko jeœli ammo puste i mamy z czego dobraæ)
+            if (weapon.currentAmmo <= 0 && !wState.IsReloading && weapon.maxAmmo > 0)
             {
                 wState.IsReloading = true;
                 wState.ReloadTimer = (float)currentTime + weapon.reloadTime;

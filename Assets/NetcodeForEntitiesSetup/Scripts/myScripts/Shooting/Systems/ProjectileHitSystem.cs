@@ -10,19 +10,17 @@ using Unity.Transforms;
 public partial struct ProjectileHitSystem : ISystem
 {
     private EntityQuery _targetQuery;
-    // 1. Deklarujemy Lookup jako pole struktury
     private ComponentLookup<HealthComponent> _healthLookup;
 
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
+        // Optymalizacja: Cache zapytania o cele
         _targetQuery = new EntityQueryBuilder(Allocator.Temp)
             .WithAll<HealthComponent, LocalTransform>()
             .Build(ref state);
 
-        // 2. Inicjalizujemy Lookup w OnCreate
         _healthLookup = state.GetComponentLookup<HealthComponent>(false);
-
         state.RequireForUpdate<NetworkTime>();
     }
 
@@ -30,11 +28,12 @@ public partial struct ProjectileHitSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         var networkTime = SystemAPI.GetSingleton<NetworkTime>();
+        // W Netcode obra¿enia rozliczamy tylko w pierwszym ticku predykcji
         if (!networkTime.IsFirstTimeFullyPredictingTick) return;
 
-        // 3. KLUCZOWE: Aktualizujemy stan Lookup na pocz¹tku OnUpdate
         _healthLookup.Update(ref state);
 
+        // U¿ywamy TempJob, bo dane id¹ do ScheduleParallel
         var targetEntities = _targetQuery.ToEntityArray(Allocator.TempJob);
         var targetTransforms = _targetQuery.ToComponentDataArray<LocalTransform>(Allocator.TempJob);
 
@@ -42,12 +41,13 @@ public partial struct ProjectileHitSystem : ISystem
         {
             TargetEntities = targetEntities,
             TargetTransforms = targetTransforms,
-            // Przekazujemy zaktualizowany lookup do Joba
             HealthLookup = _healthLookup,
+            CurrentTime = SystemAPI.Time.ElapsedTime // Przekazujemy aktualny czas
         };
 
         state.Dependency = hitJob.ScheduleParallel(state.Dependency);
 
+        // Dispose z uwzglêdnieniem zale¿noœci (Dependency)
         targetEntities.Dispose(state.Dependency);
         targetTransforms.Dispose(state.Dependency);
     }
@@ -58,14 +58,14 @@ public partial struct ProjectileHitJob : IJobEntity
 {
     [ReadOnly] public NativeArray<Entity> TargetEntities;
     [ReadOnly] public NativeArray<LocalTransform> TargetTransforms;
+    [NativeDisableParallelForRestriction] public ComponentLookup<HealthComponent> HealthLookup;
+    public double CurrentTime;
 
-    // To pozostaje bez zmian - pozwala na zapis w Jobie równoleg³ym
-    [NativeDisableParallelForRestriction]
-    public ComponentLookup<HealthComponent> HealthLookup;
-
-    public void Execute(RefRW<ProjectileComponent> proj, in LocalTransform trans)
+    // U¿ywamy RefRW dla ProjectileComponent, aby oznaczyæ œmieræ pocisku
+    public void Execute(Entity entity, RefRW<ProjectileComponent> proj, in LocalTransform trans)
     {
-        if (proj.ValueRO.Lifetime <= 0) return;
+        // Jeœli pocisk ju¿ "nie ¿yje", pomijamy go
+        if (proj.ValueRO.DeathTime <= CurrentTime) return;
 
         float3 projPos = trans.Position;
         Entity owner = proj.ValueRO.Owner;
@@ -73,9 +73,12 @@ public partial struct ProjectileHitJob : IJobEntity
         for (int i = 0; i < TargetEntities.Length; i++)
         {
             Entity targetEntity = TargetEntities[i];
+
+            // Nie trafiamy samego siebie
             if (targetEntity == owner) continue;
 
-            if (math.distancesq(projPos, TargetTransforms[i].Position) <= 0.2f)
+            // Sprawdzanie dystansu (0.2f to bardzo ma³y promieñ, upewnij siê, ¿e pasuje do Twoich modeli)
+            if (math.distancesq(projPos, TargetTransforms[i].Position) <= 0.04f) // 0.2 * 0.2 = 0.04
             {
                 if (HealthLookup.HasComponent(targetEntity))
                 {
@@ -85,7 +88,10 @@ public partial struct ProjectileHitJob : IJobEntity
                     HealthLookup[targetEntity] = health;
                 }
 
-                proj.ValueRW.Lifetime = 0;
+                // Oznaczamy pocisk jako "do zniszczenia" poprzez ustawienie czasu œmierci na teraz
+                proj.ValueRW.DeathTime = CurrentTime;
+
+                // Przerywamy pêtlê - pocisk trafia tylko w jeden cel
                 break;
             }
         }

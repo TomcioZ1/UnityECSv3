@@ -5,7 +5,6 @@ using UnityEngine;
 
 [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
 [UpdateAfter(typeof(ProjectileMoveSystem))]
-// DODAJEMY FILTR - bez tego system mo¿e dzia³aæ w pustym œwiecie bakingu
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ServerSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
 [BurstCompile]
 public partial struct ProjectileDestroySystem : ISystem
@@ -13,41 +12,42 @@ public partial struct ProjectileDestroySystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        // Upewniamy siê, ¿e system czeka na czas sieciowy
         state.RequireForUpdate<NetworkTime>();
+        state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
     }
 
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        // 1. SprawdŸ czy mamy czas (bezpiecznik)
         if (!SystemAPI.TryGetSingleton<NetworkTime>(out var networkTime)) return;
 
-        // 2. Pobierz ECB (u¿ywamy najprostszego sposobu dla Unity 6)
-        var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
-        var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
+        // Kluczowe w Unity 6: Pobieramy ECB dedykowane dla koñca symulacji
+        var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
+            .CreateCommandBuffer(state.WorldUnmanaged);
 
         var isServer = state.WorldUnmanaged.IsServer();
+        // Pobieramy aktualny czas ElapsedTime
+        var currentTime = SystemAPI.Time.ElapsedTime;
 
-        // 3. PÊTLA - usun¹³em Simulate i doda³em logowanie na samym pocz¹tku
+        // Przeszukujemy wszystkie pociski
         foreach (var (proj, entity) in SystemAPI.Query<RefRO<ProjectileComponent>>()
-                     .WithEntityAccess()) // USUNIÊTO: Simulate, Disabled
+                     .WithEntityAccess())
         {
-            // Ten log MUSI siê pojawiæ, jeœli pocisk istnieje w tym œwiecie
-            //Debug.Log($"[DestroySystem] Widzê encjê {entity.Index}. Lifetime: {proj.ValueRO.Lifetime}");
-
-            if (proj.ValueRO.Lifetime <= 0)
+            // Sprawdzamy, czy czas œmierci ju¿ nadszed³
+            if (proj.ValueRO.DeathTime <= currentTime)
             {
-                // Niszczymy tylko w pierwszym ticku predykcji (standard Netcode)
+                // W Netcode niszczenie/wy³¹czanie wykonujemy tylko w pierwszym ticku predykcji
                 if (networkTime.IsFirstTimeFullyPredictingTick)
                 {
                     if (isServer)
                     {
+                        // Serwer faktycznie usuwa encjê z pamiêci
                         ecb.DestroyEntity(entity);
                     }
                     else
                     {
-                        // Dodajemy disabled, ¿eby klient go nie widzia³
+                        // Klient tylko ukrywa encjê (Disabled). 
+                        // Netcode sam j¹ usunie, gdy dostanie potwierdzenie z serwera.
                         ecb.AddComponent<Disabled>(entity);
                     }
                 }
