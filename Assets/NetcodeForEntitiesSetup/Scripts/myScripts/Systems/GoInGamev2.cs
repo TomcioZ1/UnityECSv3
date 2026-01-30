@@ -1,8 +1,9 @@
-using UnityEngine;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.NetCode;
-using Unity.Burst;
+using Unity.Transforms;
+using UnityEngine;
 
 namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
 {
@@ -90,7 +91,12 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         public void OnUpdate(ref SystemState state)
         {
             var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
-            var prefab = SystemAPI.GetSingleton<CubeSpawner>().Cube;
+
+            // Pobieramy dane o prefabie i pozycji spawnera
+            var spawnerEntity = SystemAPI.GetSingletonEntity<CubeSpawner>();
+            var spawnerData = SystemAPI.GetComponent<CubeSpawner>(spawnerEntity);
+            var spawnerTransform = SystemAPI.GetComponent<LocalTransform>(spawnerEntity);
+
             var networkIdLookup = state.GetComponentLookup<NetworkId>(true);
 
             foreach (var (rpcRequest, goInGameRequest, rpcEntity) in
@@ -99,7 +105,6 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             {
                 var connection = rpcRequest.ValueRO.SourceConnection;
 
-                // Sprawdzamy czy po³¹czenie jeszcze istnieje i czy nie jest ju¿ w grze
                 if (!networkIdLookup.HasComponent(connection) || state.EntityManager.HasComponent<NetworkStreamInGame>(connection))
                 {
                     ecb.DestroyEntity(rpcEntity);
@@ -109,24 +114,31 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                 var networkId = networkIdLookup[connection];
                 var playerName = goInGameRequest.ValueRO.PlayerName;
 
-                Debug.Log($"[Server] Spawnowanie gracza '{playerName}' dla NetworkId: {networkId.Value}");
+                Debug.Log($"[Server] Spawnowanie gracza '{playerName}' w pozycji {spawnerTransform.Position}");
 
-                // 1. Kluczowe: Serwer musi dodaæ ten komponent do po³¹czenia, aby zacz¹æ replikacjê Ghostów!
                 ecb.AddComponent<NetworkStreamInGame>(connection);
 
-                // 2. Spawn gracza
-                var player = ecb.Instantiate(prefab);
-                ecb.SetComponent(player, new GhostOwner { NetworkId = networkId.Value });
+                // 1. Spawn gracza z prefabu
+                var player = ecb.Instantiate(spawnerData.Cube);
 
-                // Upewnij siê, ¿e komponent PlayerName istnieje w ECS i jest zsynchronizowany (GhostField)
+                // 2. USTAWIENIE POZYCJI: Kopiujemy pozycjê i rotacjê ze spawnera
+                // Ustawiamy Scale na 1, aby unikn¹æ problemów z fizyk¹
+                ecb.SetComponent(player, LocalTransform.FromPositionRotationScale(
+                    spawnerTransform.Position,
+                    spawnerTransform.Rotation,
+                    1.0f));
+
+                // 3. Przypisanie w³aœciciela i imienia
+                ecb.SetComponent(player, new GhostOwner { NetworkId = networkId.Value });
                 ecb.SetComponent(player, new PlayerName { Value = playerName });
 
-                // 3. Dodanie do LinkedEntityGroup, aby gracz zosta³ usuniêty przy roz³¹czeniu
                 ecb.AppendToBuffer(connection, new LinkedEntityGroup { Value = player });
-
-                // 4. Usuwamy encjê RPC
                 ecb.DestroyEntity(rpcEntity);
             }
         }
     }
+
+
+
+
 }

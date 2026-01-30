@@ -2,6 +2,7 @@ using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
+using Unity.Physics;
 using Unity.Transforms;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
@@ -62,8 +63,8 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             if (Camera.main != null)
             {
                 Vector2 screenMousePos = Mouse.current.position.ReadValue();
-                Ray ray = Camera.main.ScreenPointToRay(screenMousePos);
-                Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
+                UnityEngine.Ray ray = Camera.main.ScreenPointToRay(screenMousePos);
+                UnityEngine.Plane groundPlane = new UnityEngine.Plane(Vector3.up, Vector3.zero);
                 if (groundPlane.Raycast(ray, out float enter))
                 {
                     worldMousePos = (float3)ray.GetPoint(enter);
@@ -104,7 +105,6 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
     [BurstCompile]
     public partial struct CubeMovementSystem : ISystem
     {
-        // U¿ywamy Lookup, ¿eby sprawdziæ komponent bez b³êdów Structural Change
         private ComponentLookup<GhostOwnerIsLocal> ghostOwnerLookup;
 
         [BurstCompile]
@@ -116,30 +116,34 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            var dt = SystemAPI.Time.DeltaTime;
             var moveSpeed = 5f;
-
-            // Odœwie¿amy lookup
             ghostOwnerLookup.Update(ref state);
 
-            foreach (var (input, trans, entity) in
-                     SystemAPI.Query<RefRO<MyPlayerInput>, RefRW<LocalTransform>>()
+            // Zmieniamy zapytanie: dodajemy PhysicsVelocity, usuwamy modyfikacjê LocalTransform.Position
+            foreach (var (input, velocity, trans, entity) in
+                     SystemAPI.Query<RefRO<MyPlayerInput>, RefRW<PhysicsVelocity>, RefRW<LocalTransform>>()
                      .WithAll<Simulate>()
                      .WithEntityAccess())
             {
-                // 1. RUCH
+                // 1. RUCH FIZYCZNY
                 float2 moveInput = new float2(input.ValueRO.Horizontal, input.ValueRO.Vertical);
+
                 if (math.lengthsq(moveInput) > 0.001f)
                 {
-                    moveInput = math.normalize(moveInput) * moveSpeed * dt;
-                    trans.ValueRW.Position += new float3(moveInput.x, 0, moveInput.y);
+                    moveInput = math.normalize(moveInput) * moveSpeed;
+                    // Ustawiamy prêdkoœæ zamiast zmieniaæ pozycjê. 
+                    // Unity Physics samo przesunie obiekt w oparciu o tê prêdkoœæ, uwzglêdniaj¹c kolizje.
+                    velocity.ValueRW.Linear = new float3(moveInput.x, 0, moveInput.y);
+                }
+                else
+                {
+                    // Zatrzymujemy postaæ, gdy nie ma inputu (inaczej bêdzie siê œlizgaæ)
+                    velocity.ValueRW.Linear = new float3(0, 0, 0);
                 }
 
-                // 2. ROTACJA - NAPRAWA
-                // Sprawdzamy, czy to MY sterujemy t¹ encj¹
+                // 2. ROTACJA (Pozostaje bez zmian, bo rotacja zwykle nie koliduje tak samo jak pozycja)
                 if (ghostOwnerLookup.HasComponent(entity))
                 {
-                    // Tylko dla naszej lokalnej postaci liczymy rotacjê z myszki
                     float3 dirToMouse = input.ValueRO.MouseWorldPos - trans.ValueRO.Position;
                     dirToMouse.y = 0;
 
@@ -148,9 +152,9 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                         trans.ValueRW.Rotation = quaternion.LookRotationSafe(dirToMouse, math.up());
                     }
                 }
-                // Jeœli to NIE jest GhostOwnerIsLocal, system NIC nie robi z rotacj¹.
-                // Dziêki temu rotacja przeciwnika zostanie taka, jak¹ przys³a³ serwer (Netcode Sync).
             }
         }
     }
+
+
 }

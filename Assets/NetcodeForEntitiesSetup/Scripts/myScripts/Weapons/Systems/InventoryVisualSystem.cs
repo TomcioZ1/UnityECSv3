@@ -2,10 +2,10 @@ using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
+using Unity.Physics.Systems;
 using Unity.Transforms;
 
-[UpdateInGroup(typeof(PredictedSimulationSystemGroup), OrderFirst = false)]
-[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation | WorldSystemFilterFlags.ClientSimulation)]
+[UpdateInGroup(typeof(PredictedSimulationSystemGroup), OrderLast = true)]
 [BurstCompile]
 public partial struct InventoryVisualSystem : ISystem
 {

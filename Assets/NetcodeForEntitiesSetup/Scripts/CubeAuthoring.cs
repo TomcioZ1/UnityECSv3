@@ -17,9 +17,11 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         {
             public override void Bake(CubeAuthoring authoring)
             {
-                // Encja g³ównego gracza (Cube)
+                // KLUCZ: U¿ywamy TransformUsageFlags.Dynamic. 
+                // Jest to wymagane, aby Physics Body mog³o poruszaæ encj¹.
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
 
+                // Rejestrujemy komponenty tagowe i logiczne
                 AddComponent<Cube>(entity);
 
                 AddComponent(entity, new HealthComponent
@@ -29,27 +31,32 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
 
                 AddComponent(entity, new PlayerInventory { });
 
+                // Socket broni
                 AddComponent(entity, new WeaponSocket
                 {
                     WeaponSocketEntity = GetEntity(authoring.WeaponSocket, TransformUsageFlags.Dynamic)
                 });
 
+                // Dane ataku
                 AddComponent(entity, new HandAttackData
                 {
                     AttackDamage = 20
                 });
+
                 AddComponent(entity, new ActiveHands { });
+
+                // Sochety r¹k
                 AddComponent(entity, new HandsSocket
                 {
                     LeftHandSocket = GetEntity(authoring.LeftHandSocket, TransformUsageFlags.Dynamic),
                     RightHandSocket = GetEntity(authoring.RightHandSocket, TransformUsageFlags.Dynamic)
                 });
 
-
-
-                
-
-
+                /* UWAGA: Nie musisz dodawaæ tutaj AddComponent<PhysicsVelocity> itp.
+                   Unity Physics automatycznie doda potrzebne komponenty (PhysicsVelocity, PhysicsMass),
+                   poniewa¿ masz na tym samym GameObject komponenty Physics Body i Physics Shape.
+                   Bakerzy z pakietu Unity.Physics zrobi¹ to za Ciebie "pod spodem".
+                */
             }
         }
     }
