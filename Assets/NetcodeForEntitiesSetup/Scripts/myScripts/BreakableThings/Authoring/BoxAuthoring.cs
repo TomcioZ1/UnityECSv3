@@ -13,7 +13,7 @@ public class BoxAuthoring : MonoBehaviour
         public override void Bake(BoxAuthoring authoring)
         {
             // TransformUsageFlags.Dynamic jest konieczne, bo bêdziemy zmieniaæ skalê i pozycjê w czasie gry
-            Entity entity = GetEntity(TransformUsageFlags.Dynamic);
+            Entity entity = GetEntity(TransformUsageFlags.WorldSpace);
 
             // 1. Dodajemy HealthComponent (synchronizowany przez sieæ)
             AddComponent(entity, new HealthComponent

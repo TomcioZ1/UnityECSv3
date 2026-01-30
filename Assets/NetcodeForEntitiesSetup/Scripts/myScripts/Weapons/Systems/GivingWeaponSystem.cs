@@ -10,9 +10,6 @@ using Unity.Transforms;
 [BurstCompile]
 public partial struct WeaponControlSystem : ISystem
 {
-
-
-
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {

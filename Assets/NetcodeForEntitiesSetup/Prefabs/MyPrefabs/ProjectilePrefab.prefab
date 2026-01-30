@@ -11,11 +11,9 @@ GameObject:
   - component: {fileID: 4951117407515177681}
   - component: {fileID: 5625713881322479136}
   - component: {fileID: 7733758827450274924}
-  - component: {fileID: 8221383580877728883}
   - component: {fileID: 3022335280627910858}
   - component: {fileID: 763511260762615270}
   - component: {fileID: 7347665601946108354}
-  - component: {fileID: -1429209715678531015}
   m_Layer: 0
   m_Name: ProjectilePrefab
   m_TagString: Untagged
@@ -91,27 +89,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!135 &8221383580877728883
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1644533397948232232}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 0
-  serializedVersion: 3
-  m_Radius: 0.5
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &3022335280627910858
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -162,21 +139,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 06db8b2cefdb4764f9f5b5f14e833ea7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &-1429209715678531015
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1644533397948232232}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bfdaa6c06fe64fbda2b16e07a4ee0b25, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ComponentOverrides:
-  - FullTypeName: Unity.Transforms.LocalTransform
-    EntityIndex: 0
-    PrefabType: -1
-    SendTypeOptimization: 3
-    VariantHash: 0

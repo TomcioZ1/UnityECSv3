@@ -52,7 +52,7 @@ GameObject:
   - component: {fileID: 1541173667968424935}
   m_Layer: 0
   m_Name: PlayerCapsule
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -358,14 +358,14 @@ MonoBehaviour:
     m_CustomMaterialTags:
       m_Override: 0
       m_Value:
-        Tag00: 0
-        Tag01: 0
-        Tag02: 0
-        Tag03: 0
-        Tag04: 0
-        Tag05: 0
-        Tag06: 0
-        Tag07: 0
+        Tag00: 1
+        Tag01: 1
+        Tag02: 1
+        Tag03: 1
+        Tag04: 1
+        Tag05: 1
+        Tag06: 1
+        Tag07: 1
     m_SerializedVersion: 1
   m_SerializedVersion: 3
 --- !u!114 &1541173667968424935
@@ -411,14 +411,14 @@ MonoBehaviour:
     z: 0.4
   m_WorldIndex: 0
   m_CustomTags:
-    Tag00: 0
-    Tag01: 0
-    Tag02: 0
-    Tag03: 0
-    Tag04: 0
-    Tag05: 0
-    Tag06: 0
-    Tag07: 0
+    Tag00: 1
+    Tag01: 1
+    Tag02: 1
+    Tag03: 1
+    Tag04: 1
+    Tag05: 1
+    Tag06: 1
+    Tag07: 1
 --- !u!1 &4802109308915642917
 GameObject:
   m_ObjectHideFlags: 0
