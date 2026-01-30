@@ -3,6 +3,7 @@ using Unity.Transforms;
 using Unity.Mathematics;
 using Unity.NetCode;
 using UnityEngine;
+using Unity.Multiplayer.Center.NetcodeForEntitiesSetup;
 
 [UpdateInGroup(typeof(PresentationSystemGroup))]
 public partial class CameraFollowSystem : SystemBase
@@ -18,9 +19,11 @@ public partial class CameraFollowSystem : SystemBase
             if (_cachedProxy == null) return;
         }
 
-        // 2. Bezpieczne znalezienie lokalnego gracza
-        // Query automatycznie odfiltruje encje, gdzie GhostOwnerIsLocal jest wy³¹czony
-        foreach (var (ltw, localTag) in SystemAPI.Query<RefRO<LocalToWorld>, EnabledRefRO<GhostOwnerIsLocal>>())
+        // 2. Bezpieczne znalezienie lokalnego gracza z filtrem Cube
+        // Dziêki WithAll<Cube> system zignoruje rêce, broñ i inne Ghosty, 
+        // skupiaj¹c siê tylko na encji z Twoim tagiem.
+        foreach (var (ltw, localTag) in SystemAPI.Query<RefRO<LocalToWorld>, EnabledRefRO<GhostOwnerIsLocal>>()
+                     .WithAll<PlayerTag>()) // <--- TUTAJ DODALIŒMY FILTR
         {
             // 3. Obliczenia pozycji
             Vector3 targetPos = (Vector3)ltw.ValueRO.Position + _cachedProxy.Offset;
@@ -34,7 +37,7 @@ public partial class CameraFollowSystem : SystemBase
             // Sztywna rotacja
             camTransform.rotation = Quaternion.Euler(_cachedProxy.PitchAngle, 0, 0);
 
-            // Skoro znaleŸliœmy lokalnego gracza i zaktualizowaliœmy kamerê, mo¿emy wyjœæ z pêtli
+            // Skoro znaleŸliœmy w³aœciwego gracza, wychodzimy
             break;
         }
     }

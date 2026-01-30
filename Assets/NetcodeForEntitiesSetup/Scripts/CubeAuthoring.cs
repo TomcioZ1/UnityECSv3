@@ -4,7 +4,7 @@ using Unity.Mathematics;
 
 namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
 {
-    public struct Cube : IComponentData { }
+    public struct PlayerTag : IComponentData { }
 
     [DisallowMultipleComponent]
     public class CubeAuthoring : MonoBehaviour
@@ -22,7 +22,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
 
                 // Rejestrujemy komponenty tagowe i logiczne
-                AddComponent<Cube>(entity);
+                AddComponent<PlayerTag>(entity);
 
                 AddComponent(entity, new HealthComponent
                 {

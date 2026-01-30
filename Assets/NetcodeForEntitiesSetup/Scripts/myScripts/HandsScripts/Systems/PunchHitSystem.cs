@@ -1,100 +1,90 @@
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Mathematics;
+using Unity.Physics;
+using Unity.Physics.Systems;
 using Unity.NetCode;
-using Unity.Transforms;
-using UnityEngine;
+using Unity;
 
-[UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
-[UpdateAfter(typeof(HandsSystem))]
+[UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
-[BurstCompile]
 public partial struct PunchHitSystem : ISystem
 {
-    // 1. Deklarujemy pola Lookup i Query jako pola struktury
     private ComponentLookup<HealthComponent> _healthLookup;
-    private EntityQuery _targetsQuery;
+    private ComponentLookup<HandAttackData> _attackDataLookup;
+    private ComponentLookup<HandsOwner> _ownerLookup;
 
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        // 2. Inicjalizujemy Lookup (false = chcemy zapisywaæ punkty ¿ycia)
         _healthLookup = state.GetComponentLookup<HealthComponent>(false);
-
-        // 3. Budujemy zapytanie raz w OnCreate
-        _targetsQuery = new EntityQueryBuilder(Allocator.Temp)
-            .WithAll<HealthComponent, LocalToWorld>()
-            .Build(ref state);
-
-        state.RequireForUpdate<NetworkTime>();
+        _attackDataLookup = state.GetComponentLookup<HandAttackData>(false);
+        _ownerLookup = state.GetComponentLookup<HandsOwner>(true);
+        state.RequireForUpdate<SimulationSingleton>();
     }
 
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        // 4. KLUCZOWE: Aktualizujemy stan Lookup na pocz¹tku klatki
         _healthLookup.Update(ref state);
+        _attackDataLookup.Update(ref state);
+        _ownerLookup.Update(ref state);
 
-        // U¿ywamy Allocator.Temp dla tablic, które ¿yj¹ tylko w jednej klatce
-        var allTargets = _targetsQuery.ToEntityArray(Allocator.Temp);
-        var allTargetTransforms = _targetsQuery.ToComponentDataArray<LocalToWorld>(Allocator.Temp);
+        var simulation = SystemAPI.GetSingleton<SimulationSingleton>();
 
-        if (allTargets.Length <= 1) return;
-
-        foreach (var (anim, ltw, playerEntity) in
-                 SystemAPI.Query<RefRW<HandAttackData>, RefRO<LocalToWorld>>()
-                 .WithEntityAccess())
+        state.Dependency = new PunchTriggerJob
         {
-            if (anim.ValueRO.IsAttacking && anim.ValueRO.AttackProgress >= 0.6f && !anim.ValueRO.HasAppliedDamage)
+            HealthLookup = _healthLookup,
+            AttackDataLookup = _attackDataLookup,
+            OwnerLookup = _ownerLookup
+        }.Schedule(simulation, state.Dependency);
+    }
+}
+
+[BurstCompile]
+struct PunchTriggerJob : ITriggerEventsJob
+{
+    public ComponentLookup<HealthComponent> HealthLookup;
+    public ComponentLookup<HandAttackData> AttackDataLookup;
+    [ReadOnly] public ComponentLookup<HandsOwner> OwnerLookup;
+
+    public void Execute(TriggerEvent triggerEvent)
+    {
+        ProcessCollision(triggerEvent.EntityA, triggerEvent.EntityB);
+        ProcessCollision(triggerEvent.EntityB, triggerEvent.EntityA);
+    }
+
+    private void ProcessCollision(Entity striker, Entity receiver)
+    {
+        // 1. Sprawdzamy czy striker to d³oñ i czy cel ma ¿ycie
+        if (OwnerLookup.HasComponent(striker) && HealthLookup.HasComponent(receiver))
+        {
+            Entity ownerEntity = OwnerLookup[striker].Entity;
+
+            // Nie bijemy samych siebie
+            if (ownerEntity == receiver) return;
+
+            // 2. Pobieramy dane ataku gracza, do którego nale¿y d³oñ
+            if (AttackDataLookup.HasComponent(ownerEntity))
             {
-                float3 playerPos = ltw.ValueRO.Position;
-                float3 forward = ltw.ValueRO.Forward;
+                var attack = AttackDataLookup[ownerEntity];
 
-                float maxRange = 0.8f;
-                float hitAngleThreshold = 0.4f;
-                bool hitFound = false;
-
-                for (int i = 0; i < allTargets.Length; i++)
+                // 3. WARUNEK HITU: Musi byæ w fazie ataku, odpowiednim progresie i nie mieæ jeszcze zaliczonego hita
+                if (attack.IsAttacking && attack.AttackProgress >= 0.6f && !attack.HasAppliedDamage)
                 {
-                    Entity targetEntity = allTargets[i];
+                    // Zadawanie obra¿eñ
+                    var hp = HealthLookup[receiver];
+                    hp.HealthPoints -= attack.AttackDamage;
+                    hp.LastHitBy = ownerEntity;
+                    HealthLookup[receiver] = hp;
 
-                    if (targetEntity == playerEntity) continue;
+                    // Blokujemy wielokrotne hity w tym samym zamachu
+                    attack.HasAppliedDamage = true;
+                    AttackDataLookup[ownerEntity] = attack;
 
-                    float3 targetPos = allTargetTransforms[i].Position;
-                    float distSq = math.distancesq(playerPos.xz, targetPos.xz);
-
-                    if (distSq <= (maxRange * maxRange))
-                    {
-                        float3 toTarget = math.normalize(new float3(targetPos.x - playerPos.x, 0, targetPos.z - playerPos.z));
-                        float dot = math.dot(forward.xz, toTarget.xz);
-
-                        if (dot > hitAngleThreshold)
-                        {
-                            // U¿ywamy zaktualizowanego pola _healthLookup
-                            var hp = _healthLookup[targetEntity];
-                            hp.HealthPoints -= anim.ValueRO.AttackDamage;
-                            hp.LastHitBy = playerEntity;
-
-                            _healthLookup[targetEntity] = hp;
-
-                            anim.ValueRW.HasAppliedDamage = true;
-                            hitFound = true;
-
-                            //Debug.Log($"<color=red>PUNCH HIT!</color> {playerEntity.Index} hit {targetEntity.Index}. HP left: {hp.HealthPoints}");
-                            break;
-                        }
-                    }
+                    // Log sukcesu na serwerze
+                    //Unity.Debug.Log($"[SERVER] Hit! Gracz {ownerEntity.Index} uderzyl {receiver.Index}. Damage: {attack.AttackDamage}");
                 }
-
-                if (!hitFound)
-                {
-                    anim.ValueRW.HasAppliedDamage = true;
-                }
-            }
-            else if (!anim.ValueRO.IsAttacking)
-            {
-                anim.ValueRW.HasAppliedDamage = false;
             }
         }
     }

@@ -9,7 +9,7 @@ class HandsAuthoring : MonoBehaviour
     {
         public override void Bake(HandsAuthoring authoring)
         {
-            var entity = GetEntity(TransformUsageFlags.Dynamic);
+            var entity = GetEntity(TransformUsageFlags.None);
             // Skala r¹k
             // 1. SKALA: Pobieramy localScale (x, y, z) bezpoœrednio z GameObjectu
             AddComponent(entity, new BaseScale { Value = authoring.transform.localScale });
@@ -18,7 +18,7 @@ class HandsAuthoring : MonoBehaviour
             AddComponent<PostTransformMatrix>(entity);
 
             // Musisz dodaæ te komponenty tutaj, aby broñ mog³a byæ "dzieckiem" socketu
-            AddComponent<LocalTransform>(entity);
+            //AddComponent<LocalTransform>(entity);
             AddComponent<Parent>(entity);
 
             AddComponent<HandsOwner>(entity);

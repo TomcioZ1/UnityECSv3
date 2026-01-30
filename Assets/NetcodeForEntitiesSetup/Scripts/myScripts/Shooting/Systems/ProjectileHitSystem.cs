@@ -1,99 +1,84 @@
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Mathematics;
+using Unity.Physics;
+using Unity.Physics.Systems;
 using Unity.NetCode;
-using Unity.Transforms;
+using Unity;
 
-[UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
-[BurstCompile]
+[UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
+[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 public partial struct ProjectileHitSystem : ISystem
 {
-    private EntityQuery _targetQuery;
     private ComponentLookup<HealthComponent> _healthLookup;
+    private ComponentLookup<ProjectileComponent> _projectileLookup;
 
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        // Optymalizacja: Cache zapytania o cele
-        _targetQuery = new EntityQueryBuilder(Allocator.Temp)
-            .WithAll<HealthComponent, LocalTransform>()
-            .Build(ref state);
-
         _healthLookup = state.GetComponentLookup<HealthComponent>(false);
-        state.RequireForUpdate<NetworkTime>();
+        _projectileLookup = state.GetComponentLookup<ProjectileComponent>(false);
+
+        state.RequireForUpdate<SimulationSingleton>();
     }
 
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        var networkTime = SystemAPI.GetSingleton<NetworkTime>();
-        // W Netcode obra¿enia rozliczamy tylko w pierwszym ticku predykcji
-        if (!networkTime.IsFirstTimeFullyPredictingTick) return;
-
         _healthLookup.Update(ref state);
+        _projectileLookup.Update(ref state);
 
-        // U¿ywamy TempJob, bo dane id¹ do ScheduleParallel
-        var targetEntities = _targetQuery.ToEntityArray(Allocator.TempJob);
-        var targetTransforms = _targetQuery.ToComponentDataArray<LocalTransform>(Allocator.TempJob);
+        var simulation = SystemAPI.GetSingleton<SimulationSingleton>();
 
-        var hitJob = new ProjectileHitJob
+        // Uruchamiamy Job obs³uguj¹cy triggery fizyki
+        state.Dependency = new ProjectileTriggerJob
         {
-            TargetEntities = targetEntities,
-            TargetTransforms = targetTransforms,
             HealthLookup = _healthLookup,
-            CurrentTime = SystemAPI.Time.ElapsedTime // Przekazujemy aktualny czas
-        };
-
-        state.Dependency = hitJob.ScheduleParallel(state.Dependency);
-
-        // Dispose z uwzglêdnieniem zale¿noœci (Dependency)
-        targetEntities.Dispose(state.Dependency);
-        targetTransforms.Dispose(state.Dependency);
+            ProjectileLookup = _projectileLookup,
+            CurrentTime = SystemAPI.Time.ElapsedTime
+        }.Schedule(simulation, state.Dependency);
     }
 }
 
 [BurstCompile]
-public partial struct ProjectileHitJob : IJobEntity
+struct ProjectileTriggerJob : ITriggerEventsJob
 {
-    [ReadOnly] public NativeArray<Entity> TargetEntities;
-    [ReadOnly] public NativeArray<LocalTransform> TargetTransforms;
-    [NativeDisableParallelForRestriction] public ComponentLookup<HealthComponent> HealthLookup;
+    public ComponentLookup<HealthComponent> HealthLookup;
+    public ComponentLookup<ProjectileComponent> ProjectileLookup;
     public double CurrentTime;
 
-    // U¿ywamy RefRW dla ProjectileComponent, aby oznaczyæ œmieræ pocisku
-    public void Execute(Entity entity, RefRW<ProjectileComponent> proj, in LocalTransform trans)
+    public void Execute(TriggerEvent triggerEvent)
     {
-        // Jeœli pocisk ju¿ "nie ¿yje", pomijamy go
-        if (proj.ValueRO.DeathTime <= CurrentTime) return;
+        ProcessCollision(triggerEvent.EntityA, triggerEvent.EntityB);
+        ProcessCollision(triggerEvent.EntityB, triggerEvent.EntityA);
+    }
 
-        float3 projPos = trans.Position;
-        Entity owner = proj.ValueRO.Owner;
-
-        for (int i = 0; i < TargetEntities.Length; i++)
+    private void ProcessCollision(Entity projectileEntity, Entity targetEntity)
+    {
+        // 1. Sprawdzamy czy pierwszy obiekt to pocisk, a drugi ma ¿ycie
+        if (ProjectileLookup.HasComponent(projectileEntity) && HealthLookup.HasComponent(targetEntity))
         {
-            Entity targetEntity = TargetEntities[i];
+            var proj = ProjectileLookup[projectileEntity];
 
-            // Nie trafiamy samego siebie
-            if (targetEntity == owner) continue;
+            // 2. Jeœli pocisk ju¿ zosta³ oznaczony jako martwy (np. trafi³ coœ w tej samej klatce), pomijamy
+            if (proj.DeathTime <= CurrentTime) return;
 
-            // Sprawdzanie dystansu (0.2f to bardzo ma³y promieñ, upewnij siê, ¿e pasuje do Twoich modeli)
-            if (math.distancesq(projPos, TargetTransforms[i].Position) <= 0.04f) // 0.2 * 0.2 = 0.04
-            {
-                if (HealthLookup.HasComponent(targetEntity))
-                {
-                    var health = HealthLookup[targetEntity];
-                    health.HealthPoints -= proj.ValueRO.Damage;
-                    health.LastHitBy = owner;
-                    HealthLookup[targetEntity] = health;
-                }
+            // 3. Nie trafiamy w³aœciciela pocisku
+            if (targetEntity == proj.Owner) return;
 
-                // Oznaczamy pocisk jako "do zniszczenia" poprzez ustawienie czasu œmierci na teraz
-                proj.ValueRW.DeathTime = CurrentTime;
+            // 4. Zadajemy obra¿enia
+            var health = HealthLookup[targetEntity];
+            health.HealthPoints -= proj.Damage;
+            health.LastHitBy = proj.Owner;
+            HealthLookup[targetEntity] = health;
 
-                // Przerywamy pêtlê - pocisk trafia tylko w jeden cel
-                break;
-            }
+            // 5. "Niszczymy" pocisk (ustawiamy DeathTime na teraz)
+            // System niszcz¹cy pociski (np. ProjectileDeathSystem) usunie encjê na podstawie tego czasu
+            proj.DeathTime = CurrentTime;
+            ProjectileLookup[projectileEntity] = proj;
+
+            // Log serwerowy dla testów
+            //Unity.Debug.Log($"[PROJECTILE] Serwer: Pocisk {projectileEntity.Index} trafil {targetEntity.Index}. HP: {health.HealthPoints}");
         }
     }
 }

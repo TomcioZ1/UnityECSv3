@@ -53,6 +53,8 @@ public partial struct GivingHandsSystem : ISystem
 
                     ecb.SetComponent(leftHandSpawned, ownerData);
                     ecb.SetComponent(rightHandSpawned, ownerData);
+                    ecb.SetComponent(leftHandSpawned, new HandsOwner { Entity = playerEntity });
+                    ecb.SetComponent(rightHandSpawned, new HandsOwner { Entity = playerEntity });
                 }
 
                 ecb.AppendToBuffer(playerEntity, new LinkedEntityGroup { Value = leftHandSpawned });
