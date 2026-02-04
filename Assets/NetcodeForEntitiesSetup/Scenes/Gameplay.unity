@@ -1525,9 +1525,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3504d83891a0b6a4d968d0d005e78813, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Offset: {x: 0, y: 20, z: -10}
+  Offset: {x: 0, y: 10, z: 0}
   Smoothness: 20
-  PitchAngle: 60
+  PitchAngle: 90
 --- !u!1 &947844859
 GameObject:
   m_ObjectHideFlags: 0
