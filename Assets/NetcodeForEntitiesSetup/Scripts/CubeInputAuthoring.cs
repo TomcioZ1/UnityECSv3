@@ -9,8 +9,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 #endif
 
-namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
-{
+
     public struct MyPlayerInput : IInputComponentData
     {
         public int Horizontal;
@@ -116,7 +115,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            var moveSpeed = 5f;
+            var moveSpeed = 3f;
             ghostOwnerLookup.Update(ref state);
 
             // Zmieniamy zapytanie: dodajemy PhysicsVelocity, usuwamy modyfikacjê LocalTransform.Position
@@ -157,4 +156,3 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
     }
 
 
-}

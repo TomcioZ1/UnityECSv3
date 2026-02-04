@@ -32,7 +32,7 @@ public partial struct BoxVisualSystem : ISystem
             }
 
             // 1. SKALA (0.5 - 1.0)
-            float scaleMultiplier = math.lerp(0.5f, 1.0f, healthPercent);
+            float scaleMultiplier = math.lerp(0.75f, 1.0f, healthPercent);
             float targetScale = box.ValueRO.InitialScale * scaleMultiplier;
 
             // 2. KOREKTA POZYCJI - ROZWI¥ZANIE PROPORCJONALNE

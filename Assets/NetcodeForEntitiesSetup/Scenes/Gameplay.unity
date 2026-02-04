@@ -1526,7 +1526,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Offset: {x: 0, y: 10, z: 0}
-  Smoothness: 20
+  Smoothness: 10
   PitchAngle: 90
 --- !u!1 &947844859
 GameObject:
