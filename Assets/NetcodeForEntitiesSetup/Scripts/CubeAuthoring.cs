@@ -52,11 +52,10 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                     RightHandSocket = GetEntity(authoring.RightHandSocket, TransformUsageFlags.Dynamic)
                 });
 
-                /* UWAGA: Nie musisz dodawaæ tutaj AddComponent<PhysicsVelocity> itp.
-                   Unity Physics automatycznie doda potrzebne komponenty (PhysicsVelocity, PhysicsMass),
-                   poniewa¿ masz na tym samym GameObject komponenty Physics Body i Physics Shape.
-                   Bakerzy z pakietu Unity.Physics zrobi¹ to za Ciebie "pod spodem".
-                */
+                // Skala
+                AddComponent(entity, new BaseScale { Value = authoring.transform.localScale });
+
+
             }
         }
     }
