@@ -144,12 +144,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ProjectileSpawner: {fileID: 1728619164605726392}
-  maxAmmo: 1000
-  MagSize: 100
+  maxAmmo: 120
+  MagSize: 30
   FireRate: 0.1
   ReloadTime: 2
   ProjectileSpeed: 9
-  Damage: 100
+  Damage: 30
 --- !u!1 &1728619164605726392
 GameObject:
   m_ObjectHideFlags: 0

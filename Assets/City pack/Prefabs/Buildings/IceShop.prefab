@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 7960319270427864613}
   - component: {fileID: 8327451880706287884}
   - component: {fileID: 6954751031625958148}
+  - component: {fileID: 7458275852972058328}
   m_Layer: 0
   m_Name: IceShop
   m_TagString: Untagged
@@ -106,11 +107,11 @@ MonoBehaviour:
   m_ShapeType: 0
   m_PrimitiveCenter:
     x: 0.07983875
-    y: -0.1
+    y: 1.76
     z: 1.56
   m_PrimitiveSize:
     x: 4.884037
-    y: 2.46
+    y: 6.29
     z: 4.31
   m_PrimitiveOrientation:
     Value:
@@ -119,15 +120,15 @@ MonoBehaviour:
       z: 0
     RotationOrder: 4
   m_Capsule:
-    Height: 4.884037
-    Radius: 2.155
-    Axis: 0
+    Height: 6.29
+    Radius: 2.4420185
+    Axis: 1
   m_Cylinder:
-    Height: 2.46
+    Height: 6.29
     Radius: 2.4420185
     Axis: 1
   m_CylinderSideCount: 20
-  m_SphereRadius: 2.4420185
+  m_SphereRadius: 3.145
   m_MinimumSkinnedVertexWeight: 0.1
   m_ConvexHullGenerationParameters:
     m_SimplificationTolerance: 0.0933234
@@ -289,6 +290,18 @@ MonoBehaviour:
   Importance: 1
   MaxSendRate: 0
   prefabId: 3ae3ccce9568e4d46b3296a28109eeb9
+--- !u!114 &7458275852972058328
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3915971288100051877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b80c7797cc0afa744a01b61063b1a644, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &5588825012614275561
 GameObject:
   m_ObjectHideFlags: 0
