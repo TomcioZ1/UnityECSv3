@@ -9,20 +9,32 @@ public class BoxAuthoring : MonoBehaviour
     {
         public override void Bake(BoxAuthoring authoring)
         {
-            // WA¯NE: TransformUsageFlags.Dynamic jest kluczowe
             var entity = GetEntity(TransformUsageFlags.Dynamic);
 
             AddComponent(entity, new HealthComponent
             {
                 HealthPoints = authoring.StartHealth,
-                MaxHealthPoints = authoring.StartHealth // Ustawiamy MaxHP na startowe HP
+                MaxHealthPoints = authoring.StartHealth
             });
 
-            // Pobieramy lokaln¹ skalê GameObjectu - jeœli to 127, to zapisze 127
+            float detectedHeight = 1.0f;
+            float detectedCenterY = 0.0f; // NOWE
+
+            var renderer = authoring.GetComponent<MeshRenderer>();
+            if (renderer == null) renderer = authoring.GetComponentInChildren<MeshRenderer>();
+
+            if (renderer != null)
+            {
+                detectedHeight = renderer.localBounds.size.y;
+                detectedCenterY = renderer.localBounds.center.y; // Pobieramy offset œrodka
+            }
+
             AddComponent(entity, new BoxComponent
             {
-                InitialScale = authoring.transform.localScale.x,
-                InitialY = authoring.transform.position.y
+                InitialScale = authoring.transform.localScale.y,
+                InitialY = authoring.transform.position.y,
+                MeshHeight = detectedHeight,
+                CenterOffset = detectedCenterY // Zapisujemy do komponentu
             });
         }
     }
