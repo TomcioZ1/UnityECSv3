@@ -91,7 +91,7 @@ public partial struct ProjectileSpawnSystem : ISystem
                     {
                         // Poprawka: mno¿ymy przez ok 0.1-0.2 (poniewa¿ 1.0 to bardzo du¿o w ECS na klatkê)
                         // Jeœli pocisk jest wci¹¿ za Tob¹, zwiêksz tê wartoœæ.
-                        spawnPos += math.normalize(inputOffset) * 0.30f;
+                        spawnPos += math.normalize(inputOffset) * 0.25f;
                     }
 
                     Entity projectile = ecb.Instantiate(prefab.Value);

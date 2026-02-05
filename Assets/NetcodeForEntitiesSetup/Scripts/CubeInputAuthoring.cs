@@ -98,61 +98,75 @@ using UnityEngine.InputSystem;
                 if (hasValidMousePos) playerInput.ValueRW.MouseWorldPos = worldMousePos;
             }
         }
+}
+
+ 
+
+[UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
+[BurstCompile]
+public partial struct CubeMovementSystem : ISystem
+{
+    private ComponentLookup<GhostOwnerIsLocal> ghostOwnerLookup;
+
+    [BurstCompile]
+    public void OnCreate(ref SystemState state)
+    {
+        // Przygotowujemy lookup, aby sprawdziæ, czy encja nale¿y do lokalnego gracza
+        ghostOwnerLookup = state.GetComponentLookup<GhostOwnerIsLocal>(true);
     }
 
-    [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
     [BurstCompile]
-    public partial struct CubeMovementSystem : ISystem
+    public void OnUpdate(ref SystemState state)
     {
-        private ComponentLookup<GhostOwnerIsLocal> ghostOwnerLookup;
+        // Prêdkoœæ poruszania siê
+        var moveSpeed = 3f;
+        ghostOwnerLookup.Update(ref state);
 
-        [BurstCompile]
-        public void OnCreate(ref SystemState state)
+        // SystemAPI.Query jest bardzo wydajne w Unity 6
+        foreach (var (input, velocity, trans, entity) in
+                 SystemAPI.Query<RefRO<MyPlayerInput>, RefRW<PhysicsVelocity>, RefRW<LocalTransform>>()
+                 .WithAll<Simulate>()
+                 .WithEntityAccess())
         {
-            ghostOwnerLookup = state.GetComponentLookup<GhostOwnerIsLocal>(true);
-        }
+            // --- 1. RUCH LINIOWY (Fizyka) ---
+            float2 moveInput = new float2(input.ValueRO.Horizontal, input.ValueRO.Vertical);
+            float3 newLinearVelocity = float3.zero;
 
-        [BurstCompile]
-        public void OnUpdate(ref SystemState state)
-        {
-            var moveSpeed = 3f;
-            ghostOwnerLookup.Update(ref state);
-
-            // Zmieniamy zapytanie: dodajemy PhysicsVelocity, usuwamy modyfikacjê LocalTransform.Position
-            foreach (var (input, velocity, trans, entity) in
-                     SystemAPI.Query<RefRO<MyPlayerInput>, RefRW<PhysicsVelocity>, RefRW<LocalTransform>>()
-                     .WithAll<Simulate>()
-                     .WithEntityAccess())
+            if (math.lengthsq(moveInput) > 0.001f)
             {
-                // 1. RUCH FIZYCZNY
-                float2 moveInput = new float2(input.ValueRO.Horizontal, input.ValueRO.Vertical);
+                // Normalizacja zapobiega szybszemu bieganiu "na ukos"
+                float2 normalizedInput = math.normalize(moveInput);
+                newLinearVelocity = new float3(normalizedInput.x * moveSpeed, 0, normalizedInput.y * moveSpeed);
+            }
 
-                if (math.lengthsq(moveInput) > 0.001f)
-                {
-                    moveInput = math.normalize(moveInput) * moveSpeed;
-                    // Ustawiamy prêdkoœæ zamiast zmieniaæ pozycjê. 
-                    // Unity Physics samo przesunie obiekt w oparciu o tê prêdkoœæ, uwzglêdniaj¹c kolizje.
-                    velocity.ValueRW.Linear = new float3(moveInput.x, 0, moveInput.y);
-                }
-                else
-                {
-                    // Zatrzymujemy postaæ, gdy nie ma inputu (inaczej bêdzie siê œlizgaæ)
-                    velocity.ValueRW.Linear = new float3(0, 0, 0);
-                }
+            // Aplikujemy prêdkoœæ, zachowuj¹c obecn¹ prêdkoœæ w osi Y (wa¿ne dla grawitacji!)
+            velocity.ValueRW.Linear = new float3(newLinearVelocity.x, velocity.ValueRO.Linear.y, newLinearVelocity.z);
 
-                // 2. ROTACJA (Pozostaje bez zmian, bo rotacja zwykle nie koliduje tak samo jak pozycja)
-                if (ghostOwnerLookup.HasComponent(entity))
-                {
-                    float3 dirToMouse = input.ValueRO.MouseWorldPos - trans.ValueRO.Position;
-                    dirToMouse.y = 0;
+            // --- 2. ROTACJA (Zoptymalizowana pod Burst) ---
+            // Obracamy postaæ tylko jeœli steruje ni¹ lokalny gracz
+            if (ghostOwnerLookup.HasComponent(entity))
+            {
+                float3 targetPoint = input.ValueRO.MouseWorldPos;
+                float3 currentPos = trans.ValueRO.Position;
 
-                    if (math.lengthsq(dirToMouse) > 0.1f)
-                    {
-                        trans.ValueRW.Rotation = quaternion.LookRotationSafe(dirToMouse, math.up());
-                    }
+                // Obliczamy wektor kierunku od gracza do myszy
+                float3 direction = targetPoint - currentPos;
+
+                // KLUCZ: Zerujemy ró¿nicê wysokoœci (Y), aby wymusiæ obrót tylko wokó³ osi pionowej
+                direction.y = 0;
+
+                if (math.lengthsq(direction) > 0.001f)
+                {
+                    // LookRotationSafe tworzy rotacjê patrz¹c¹ w stronê znormalizowanego wektora.
+                    // math.up() jako "world up" gwarantuje, ¿e osie X i Z rotacji pozostan¹ na 0.
+                    trans.ValueRW.Rotation = quaternion.LookRotationSafe(math.normalize(direction), math.up());
                 }
             }
+
+            // --- 3. BLOKADA K¥TOWA (Zabezpieczenie fizyki) ---
+            // Wymuszamy, aby fizyka nie obraca³a kapsu³¹ w osiach X i Z (zapobiega przewracaniu)
+            // Jeœli Twoja postaæ nie musi siê krêciæ jak b¹czek przy kolizjach, zerujemy te¿ Y.
+            velocity.ValueRW.Angular = float3.zero;
         }
     }
-
-
+}
