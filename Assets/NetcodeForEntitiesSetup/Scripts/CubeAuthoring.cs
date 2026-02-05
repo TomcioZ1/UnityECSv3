@@ -12,6 +12,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         public GameObject WeaponSocket;
         public GameObject LeftHandSocket;
         public GameObject RightHandSocket;
+        public int InitialHealth = 100;
 
         class CubeBaker : Baker<CubeAuthoring>
         {
@@ -24,10 +25,8 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                 // Rejestrujemy komponenty tagowe i logiczne
                 AddComponent<PlayerTag>(entity);
 
-                AddComponent(entity, new HealthComponent
-                {
-                    HealthPoints = 100
-                });
+                AddComponent(entity, new HealthComponent{ HealthPoints = authoring.InitialHealth});
+                AddComponent(entity, new HealthComponentHistory { HealthPoints = authoring.InitialHealth});
 
                 AddComponent(entity, new PlayerInventory { });
 
