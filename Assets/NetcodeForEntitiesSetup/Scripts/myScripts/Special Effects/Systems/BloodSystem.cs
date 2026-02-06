@@ -4,7 +4,7 @@ using Unity.Mathematics;
 using Unity.Multiplayer.Center.NetcodeForEntitiesSetup;
 using Unity.Transforms;
 
-[UpdateInGroup(typeof(SimulationSystemGroup))]
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 [BurstCompile]
 public partial struct BloodSystem : ISystem
 {

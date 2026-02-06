@@ -3,6 +3,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 [BurstCompile]
 public partial struct BurgerDropSystem : ISystem
 {

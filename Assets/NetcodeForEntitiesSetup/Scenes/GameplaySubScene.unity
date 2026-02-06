@@ -42135,6 +42135,14 @@ PrefabInstance:
       value: BurgerStore
       objectReference: {fileID: 0}
     - target: {fileID: 2385155545930631534, guid: 56006386e2c79074ca1aa967cdc7a715, type: 3}
+      propertyPath: m_Cylinder.Height
+      value: 3.79
+      objectReference: {fileID: 0}
+    - target: {fileID: 2385155545930631534, guid: 56006386e2c79074ca1aa967cdc7a715, type: 3}
+      propertyPath: m_PrimitiveSize.y
+      value: 3.79
+      objectReference: {fileID: 0}
+    - target: {fileID: 2385155545930631534, guid: 56006386e2c79074ca1aa967cdc7a715, type: 3}
       propertyPath: m_PrefabInstanceID
       value: 1621648535
       objectReference: {fileID: 0}

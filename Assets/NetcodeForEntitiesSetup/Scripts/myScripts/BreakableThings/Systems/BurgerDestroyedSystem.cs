@@ -1,8 +1,11 @@
+using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 
+[WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
+[BurstCompile]
 public partial struct BurgerDestroyedSystem : ISystem
 {
     public void OnUpdate(ref SystemState state)
