@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 6404744097343859263}
   - component: {fileID: 7708265990830418627}
   - component: {fileID: 3545572830938780895}
-  - component: {fileID: -3262680535896466602}
+  - component: {fileID: -8265459352635812695}
   m_Layer: 0
   m_Name: Waterbomb
   m_TagString: Untagged
@@ -343,7 +343,7 @@ MonoBehaviour:
         Tag07: 0
     m_SerializedVersion: 1
   m_SerializedVersion: 3
---- !u!114 &-3262680535896466602
+--- !u!114 &-8265459352635812695
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -352,6 +352,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 6783416278713001351}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cf6cbc7917347794cbe546883a5b6b31, type: 3}
+  m_Script: {fileID: 11500000, guid: ea123f1c50565124babba1c4b6015d42, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  dropPrefab: {fileID: 1318181533809569827, guid: eae009cc08fe30b43bf6bc04b52f9b30, type: 3}
+  amount: 50

@@ -5,6 +5,7 @@ using Unity.Multiplayer.Center.NetcodeForEntitiesSetup;
 using Unity.NetCode;
 using Unity.Transforms;
 using Unity.Physics;
+using UnityEngine;
 
 [UpdateInGroup(typeof(PredictedFixedStepSimulationSystemGroup))]
 [BurstCompile]
@@ -91,7 +92,7 @@ public partial struct ProjectileSpawnSystem : ISystem
                     {
                         // Poprawka: mno¿ymy przez ok 0.1-0.2 (poniewa¿ 1.0 to bardzo du¿o w ECS na klatkê)
                         // Jeœli pocisk jest wci¹¿ za Tob¹, zwiêksz tê wartoœæ.
-                        spawnPos += math.normalize(inputOffset) * 0.25f;
+                        spawnPos += math.normalize(inputOffset) * 0.6f;
                     }
 
                     Entity projectile = ecb.Instantiate(prefab.Value);
@@ -118,10 +119,11 @@ public partial struct ProjectileSpawnSystem : ISystem
                     ecb.SetComponent(projectile, new ProjectileComponent
                     {
                         Damage = weapon.damage,
-                        Velocity = (direction * weapon.projectileSpeed) + playerVel,
+                        Velocity = (direction * weapon.projectileSpeed) /*+ playerVel * 0.3f*/,
                         DeathTime = currentTime + 3.0,
                         Owner = playerEntity
                     });
+                    
                 }
             }
 

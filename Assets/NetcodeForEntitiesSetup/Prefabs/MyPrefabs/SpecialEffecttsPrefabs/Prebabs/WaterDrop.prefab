@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7119886591784333001}
   - component: {fileID: 2496805311704866988}
   - component: {fileID: 6374930765095897441}
-  - component: {fileID: 7556584103858466556}
+  - component: {fileID: -6831364121883315604}
   m_Layer: 0
   m_Name: WaterDrop
   m_TagString: Untagged
@@ -87,7 +87,7 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &7556584103858466556
+--- !u!114 &-6831364121883315604
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -96,6 +96,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 1318181533809569827}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 767d6c20e623c0249b3cc64f3d0dc2fe, type: 3}
+  m_Script: {fileID: 11500000, guid: b2c0d2e16d74bba4ba8a15552be0a9f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 

@@ -4,7 +4,7 @@ using Unity.NetCode;
 using Unity.Transforms;
 using Unity.Mathematics;
 
-[UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
+[UpdateInGroup(typeof(PredictedFixedStepSimulationSystemGroup))]
 [BurstCompile]
 public partial struct BoxVisualSystem : ISystem
 {
@@ -16,7 +16,7 @@ public partial struct BoxVisualSystem : ISystem
             .CreateCommandBuffer(state.WorldUnmanaged);
 
         foreach (var (box, health, transform, entity) in
-                 SystemAPI.Query<RefRO<BoxComponent>, RefRO<HealthComponent>, RefRW<LocalTransform>>()
+                 SystemAPI.Query<RefRW<BoxComponent>, RefRO<HealthComponent>, RefRW<LocalTransform>>()
                  .WithAll<Simulate>()
                  .WithEntityAccess())
         {
@@ -28,6 +28,9 @@ public partial struct BoxVisualSystem : ISystem
             {
                 if (isServer) ecb.DestroyEntity(entity);
                 else ecb.AddComponent<Disabled>(entity);
+
+
+
                 continue;
             }
 

@@ -247,7 +247,7 @@ MonoBehaviour:
     m_DetailedStaticMeshCollision:
       m_Override: 0
       m_Value:
-        Value: 0
+        Value: 1
     m_Friction:
       m_Override: 0
       m_Value:

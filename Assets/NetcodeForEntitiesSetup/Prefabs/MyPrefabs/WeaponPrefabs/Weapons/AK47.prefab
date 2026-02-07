@@ -148,7 +148,7 @@ MonoBehaviour:
   MagSize: 30
   FireRate: 0.1
   ReloadTime: 2
-  ProjectileSpeed: 9
+  ProjectileSpeed: 5
   Damage: 30
 --- !u!1 &1728619164605726392
 GameObject:
@@ -175,7 +175,7 @@ Transform:
   m_GameObject: {fileID: 1728619164605726392}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.00265, y: 0, z: 0}
+  m_LocalPosition: {x: 0.01325, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

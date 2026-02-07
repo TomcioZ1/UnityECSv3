@@ -31,6 +31,7 @@ public class BoxAuthoring : MonoBehaviour
 
             AddComponent(entity, new BoxComponent
             {
+                isDestoryed = false,
                 InitialScale = authoring.transform.localScale.y,
                 InitialY = authoring.transform.position.y,
                 MeshHeight = detectedHeight,

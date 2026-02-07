@@ -1,7 +1,6 @@
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
-using Unity.Multiplayer.Center.NetcodeForEntitiesSetup;
 using Unity.NetCode;
 using Unity.Transforms;
 
@@ -22,7 +21,6 @@ public partial struct HandsSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         if (!SystemAPI.TryGetSingleton<NetworkTime>(out var networkTime)) return;
-        if (!networkTime.IsFinalPredictionTick) return;
 
         var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
@@ -33,47 +31,51 @@ public partial struct HandsSystem : ISystem
         float attackSpeed = 4f;
         float punchDistance = 0.25f;
 
-        // --- 1. LOGIKA ATAKU I RESETU ---
-        foreach (var (input, anim, inventory) in
-                 SystemAPI.Query<RefRO<MyPlayerInput>, RefRW<HandAttackData>, RefRO<PlayerInventory>>()
-                 .WithAll<Simulate>())
+        // --- 1. LOGIKA ATAKU (Tylko w ticku sieciowym) ---
+        // To wykonuje siê 30 razy na sekundê. Zapewnia synchronizacjê obra¿eñ.
+        if (networkTime.IsFinalPredictionTick)
         {
-            byte activeSlot = inventory.ValueRO.ActiveSlotIndex;
-            bool hasWeaponInSlot = activeSlot switch
+            foreach (var (input, anim, inventory) in
+                     SystemAPI.Query<RefRO<MyPlayerInput>, RefRW<HandAttackData>, RefRO<PlayerInventory>>()
+                     .WithAll<Simulate>())
             {
-                1 => inventory.ValueRO.Slot1_WeaponId > 0,
-                2 => inventory.ValueRO.Slot2_WeaponId > 0,
-                3 => inventory.ValueRO.Slot3_HandsId > 0,
-                4 => inventory.ValueRO.Slot4_GrenadeId > 0,
-                _ => false
-            };
-
-            bool canPunch = input.ValueRO.leftMouseButton == 1 && !hasWeaponInSlot;
-
-            // Start nowego ataku
-            if (canPunch && !anim.ValueRO.IsAttacking)
-            {
-                anim.ValueRW.IsAttacking = true;
-                anim.ValueRW.AttackProgress = 0f;
-                anim.ValueRW.HasAppliedDamage = false; // RESET FLAGI OBRA¯EÑ
-            }
-
-            if (anim.ValueRO.IsAttacking)
-            {
-                anim.ValueRW.AttackProgress += dt * attackSpeed;
-
-                // Koniec ataku
-                if (anim.ValueRO.AttackProgress >= 1f)
+                byte activeSlot = inventory.ValueRO.ActiveSlotIndex;
+                bool hasWeaponInSlot = activeSlot switch
                 {
-                    anim.ValueRW.IsAttacking = false;
+                    1 => inventory.ValueRO.Slot1_WeaponId > 0,
+                    2 => inventory.ValueRO.Slot2_WeaponId > 0,
+                    3 => inventory.ValueRO.Slot3_HandsId > 0,
+                    4 => inventory.ValueRO.Slot4_GrenadeId > 0,
+                    _ => false
+                };
+
+                bool canPunch = input.ValueRO.leftMouseButton == 1 && !hasWeaponInSlot;
+
+                if (canPunch && !anim.ValueRO.IsAttacking)
+                {
+                    anim.ValueRW.IsAttacking = true;
                     anim.ValueRW.AttackProgress = 0f;
-                    anim.ValueRW.AttackIsLeft = !anim.ValueRO.AttackIsLeft;
-                    anim.ValueRW.HasAppliedDamage = false; // RESET FLAGI DLA PEWNOŒCI
+                    anim.ValueRW.HasAppliedDamage = false;
+                }
+
+                if (anim.ValueRO.IsAttacking)
+                {
+                    anim.ValueRW.AttackProgress += dt * attackSpeed;
+
+                    if (anim.ValueRO.AttackProgress >= 1f)
+                    {
+                        anim.ValueRW.IsAttacking = false;
+                        anim.ValueRW.AttackProgress = 0f;
+                        anim.ValueRW.AttackIsLeft = !anim.ValueRO.AttackIsLeft;
+                        anim.ValueRW.HasAppliedDamage = false;
+                    }
                 }
             }
         }
 
-        // --- 2. WIZUALIZACJA ---
+        // --- 2. WIZUALIZACJA (W ka¿dej klatce predykcji) ---
+        // Usuwamy warunek IsFinalPredictionTick. Dziêki temu ruch r¹k 
+        // bêdzie aktualizowany tak czêsto, jak pozwala na to procesor/monitor.
         foreach (var (anim, socket, activeHands) in
                  SystemAPI.Query<RefRO<HandAttackData>, HandsSocket, RefRW<ActiveHands>>())
         {
@@ -82,6 +84,7 @@ public partial struct HandsSystem : ISystem
 
             if (anim.ValueRO.IsAttacking)
             {
+                // math.saturate zabezpiecza przed wartoœciami spoza zakresu 0-1 podczas interpolacji
                 float punchEffect = math.sin(math.PI * math.saturate(anim.ValueRO.AttackProgress));
                 float fwd = punchEffect * punchDistance;
                 float side = punchEffect * (punchDistance * 0.4f);

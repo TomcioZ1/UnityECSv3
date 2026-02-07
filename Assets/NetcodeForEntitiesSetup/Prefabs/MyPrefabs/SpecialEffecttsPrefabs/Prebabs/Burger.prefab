@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 3051644363768804805}
   - component: {fileID: 6269741712609644531}
   - component: {fileID: 305701294621324042}
-  - component: {fileID: 2939968121145617749}
+  - component: {fileID: -578803386237538116}
   m_Layer: 0
   m_Name: Burger
   m_TagString: Untagged
@@ -29,8 +29,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0.000001809995, y: 0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 50, y: 50, z: 50}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 10, y: 10, z: 10}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -87,7 +87,7 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &2939968121145617749
+--- !u!114 &-578803386237538116
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -96,6 +96,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 2018395182626883542}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 84bb81c552ec0b547981fa3653a22390, type: 3}
+  m_Script: {fileID: 11500000, guid: b2c0d2e16d74bba4ba8a15552be0a9f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 

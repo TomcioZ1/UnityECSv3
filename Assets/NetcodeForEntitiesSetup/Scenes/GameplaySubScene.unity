@@ -9509,7 +9509,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3410119375929091961, guid: be6ab4dbdeee95a4fab447015fe3a615, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -56.78
+      value: -60.95
       objectReference: {fileID: 0}
     - target: {fileID: 3410119375929091961, guid: be6ab4dbdeee95a4fab447015fe3a615, type: 3}
       propertyPath: m_LocalPosition.y
@@ -9517,7 +9517,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3410119375929091961, guid: be6ab4dbdeee95a4fab447015fe3a615, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 45.82
+      value: 25.38
       objectReference: {fileID: 0}
     - target: {fileID: 3410119375929091961, guid: be6ab4dbdeee95a4fab447015fe3a615, type: 3}
       propertyPath: m_LocalRotation.w
@@ -19086,10 +19086,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 758206650}
-  - component: {fileID: 758206649}
   - component: {fileID: 758206651}
-  - component: {fileID: 758206652}
-  - component: {fileID: 758206653}
   m_Layer: 0
   m_Name: SpecialEffectsSpawner
   m_TagString: Untagged
@@ -19097,19 +19094,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &758206649
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 758206648}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 75461e4e9212b334aab54b6078cd5686, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  dropPrefab: {fileID: 1318181533809569827, guid: eae009cc08fe30b43bf6bc04b52f9b30, type: 3}
 --- !u!4 &758206650
 Transform:
   m_ObjectHideFlags: 0
@@ -19138,32 +19122,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   bloodDropPrefab: {fileID: 2797013346044416332, guid: 36664a5ac264f01478a69c4a4f8c9510, type: 3}
---- !u!114 &758206652
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 758206648}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e4fc961459c39b342ad0491cfdbeddca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  burgerDropPrefab: {fileID: 2018395182626883542, guid: d7522b468e02fb04cbb0c1bd5b34a448, type: 3}
---- !u!114 &758206653
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 758206648}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2215eb1c593dcde4198e953044e1dc1a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  iceDropPrefab: {fileID: 1690660832074952870, guid: 35a6c882c1a94ac4ab57b0eb2e814c1f, type: 3}
 --- !u!1001 &761669882
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -35890,7 +35848,7 @@ Transform:
   m_GameObject: {fileID: 1351230487}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -55.03, y: 6.2, z: 46.52}
+  m_LocalPosition: {x: -61.37, y: 6.2, z: 26.15}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

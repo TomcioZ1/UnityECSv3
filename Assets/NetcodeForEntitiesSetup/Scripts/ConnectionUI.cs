@@ -263,5 +263,6 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                 UIBehaviour.ConnectionStatus = $"{address} | Connecting...";
             }
         }
+
     }
 }

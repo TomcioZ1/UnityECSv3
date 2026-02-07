@@ -32,7 +32,7 @@ public partial struct BloodSystem : ISystem
             if (currentHP < lastHP)
             {
                 int damageTaken = lastHP - currentHP;
-                int count = math.min((int)(damageTaken * 5), 40); // Max 40 kropel na raz
+                int count = math.min((int)(damageTaken * 5), 10); // Max 40 kropel na raz
 
                 var random = new Unity.Mathematics.Random((uint)(SystemAPI.Time.ElapsedTime * 1000) + (uint)entity.Index);
 

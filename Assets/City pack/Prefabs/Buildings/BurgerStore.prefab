@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 8618890517704383894}
   - component: {fileID: 1802137929166491555}
   - component: {fileID: 8456775845656461427}
-  - component: {fileID: 5512950999515781123}
+  - component: {fileID: -8253562204137715111}
   m_Layer: 0
   m_Name: BurgerStore
   m_TagString: Untagged
@@ -290,7 +290,7 @@ MonoBehaviour:
   Importance: 1
   MaxSendRate: 0
   prefabId: 56006386e2c79074ca1aa967cdc7a715
---- !u!114 &5512950999515781123
+--- !u!114 &-8253562204137715111
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -299,9 +299,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 1376171753094693092}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9b9874fdddd6fe84aaaaf1f2d980de1f, type: 3}
+  m_Script: {fileID: 11500000, guid: ea123f1c50565124babba1c4b6015d42, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  dropPrefab: {fileID: 2018395182626883542, guid: 957407fa6305c534f962908d511ce82e, type: 3}
+  amount: 50
 --- !u!1 &2089804359045422336
 GameObject:
   m_ObjectHideFlags: 0

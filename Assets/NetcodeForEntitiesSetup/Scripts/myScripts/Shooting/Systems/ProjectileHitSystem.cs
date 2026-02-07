@@ -1,84 +1,78 @@
 using Unity.Burst;
-using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Physics.Systems;
 using Unity.NetCode;
-using Unity;
+using Unity.Transforms;
 
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 public partial struct ProjectileHitSystem : ISystem
 {
-    private ComponentLookup<HealthComponent> _healthLookup;
-    private ComponentLookup<ProjectileComponent> _projectileLookup;
-
-    [BurstCompile]
-    public void OnCreate(ref SystemState state)
-    {
-        _healthLookup = state.GetComponentLookup<HealthComponent>(false);
-        _projectileLookup = state.GetComponentLookup<ProjectileComponent>(false);
-
-        state.RequireForUpdate<SimulationSingleton>();
-    }
-
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        _healthLookup.Update(ref state);
-        _projectileLookup.Update(ref state);
+        state.Dependency.Complete(); // naprawia blad rece i pociski chca zmienic cos w tym samym czasie
 
-        var simulation = SystemAPI.GetSingleton<SimulationSingleton>();
+        var collisionWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().CollisionWorld;
+        var healthLookup = SystemAPI.GetComponentLookup<HealthComponent>(false);
 
-        // Uruchamiamy Job obs³uguj¹cy triggery fizyki
-        state.Dependency = new ProjectileTriggerJob
+        var currentTime = SystemAPI.Time.ElapsedTime;
+        var dt = SystemAPI.Time.DeltaTime;
+
+        foreach (var (proj, transform, entity) in
+                 SystemAPI.Query<RefRW<ProjectileComponent>, RefRW<LocalTransform>>()
+                 .WithAll<Simulate>()
+                 .WithEntityAccess())
         {
-            HealthLookup = _healthLookup,
-            ProjectileLookup = _projectileLookup,
-            CurrentTime = SystemAPI.Time.ElapsedTime
-        }.Schedule(simulation, state.Dependency);
-    }
-}
+            if (proj.ValueRO.DeathTime <= currentTime) continue;
 
-[BurstCompile]
-struct ProjectileTriggerJob : ITriggerEventsJob
-{
-    public ComponentLookup<HealthComponent> HealthLookup;
-    public ComponentLookup<ProjectileComponent> ProjectileLookup;
-    public double CurrentTime;
+            float3 start = transform.ValueRO.Position;
+            float3 end = start + (proj.ValueRO.Velocity * dt);
 
-    public void Execute(TriggerEvent triggerEvent)
-    {
-        ProcessCollision(triggerEvent.EntityA, triggerEvent.EntityB);
-        ProcessCollision(triggerEvent.EntityB, triggerEvent.EntityA);
-    }
+            // KONFIGURACJA FILTRA DLA TWOICH KATEGORII:
+            // BelongsTo: Pocisk (4)
+            // CollidesWith: Player (0) ORAZ Rzecz (3)
+            var rayInput = new RaycastInput
+            {
+                Start = start,
+                End = end,
+                Filter = new CollisionFilter
+                {
+                    BelongsTo = 1u << 4,
+                    CollidesWith = (1u << 0) | (1u << 3),
+                    GroupIndex = 0
+                }
+            };
 
-    private void ProcessCollision(Entity projectileEntity, Entity targetEntity)
-    {
-        // 1. Sprawdzamy czy pierwszy obiekt to pocisk, a drugi ma ¿ycie
-        if (ProjectileLookup.HasComponent(projectileEntity) && HealthLookup.HasComponent(targetEntity))
-        {
-            var proj = ProjectileLookup[projectileEntity];
+            if (collisionWorld.CastRay(rayInput, out var hit))
+            {
+                // Ignoruj, jeœli promieñ trafi³ w gracza, który go wystrzeli³
+                if (hit.Entity == proj.ValueRO.Owner)
+                {
+                    transform.ValueRW.Position = end;
+                    continue;
+                }
 
-            // 2. Jeœli pocisk ju¿ zosta³ oznaczony jako martwy (np. trafi³ coœ w tej samej klatce), pomijamy
-            if (proj.DeathTime <= CurrentTime) return;
+                // Logika obra¿eñ
+                if (healthLookup.HasComponent(hit.Entity))
+                {
+                    var health = healthLookup[hit.Entity];
+                    health.HealthPoints -= proj.ValueRO.Damage;
+                    health.LastHitBy = proj.ValueRO.Owner;
+                    healthLookup[hit.Entity] = health;
+                }
 
-            // 3. Nie trafiamy w³aœciciela pocisku
-            if (targetEntity == proj.Owner) return;
-
-            // 4. Zadajemy obra¿enia
-            var health = HealthLookup[targetEntity];
-            health.HealthPoints -= proj.Damage;
-            health.LastHitBy = proj.Owner;
-            HealthLookup[targetEntity] = health;
-
-            // 5. "Niszczymy" pocisk (ustawiamy DeathTime na teraz)
-            // System niszcz¹cy pociski (np. ProjectileDeathSystem) usunie encjê na podstawie tego czasu
-            proj.DeathTime = CurrentTime;
-            ProjectileLookup[projectileEntity] = proj;
-
-            // Log serwerowy dla testów
-            //Unity.Debug.Log($"[PROJECTILE] Serwer: Pocisk {projectileEntity.Index} trafil {targetEntity.Index}. HP: {health.HealthPoints}");
+                // Zatrzymanie pocisku na przeszkodzie
+                proj.ValueRW.DeathTime = currentTime;
+                transform.ValueRW.Position = hit.Position;
+            }
+            else
+            {
+                // Brak przeszkód - swobodny lot
+                transform.ValueRW.Position = end;
+            }
         }
     }
 }

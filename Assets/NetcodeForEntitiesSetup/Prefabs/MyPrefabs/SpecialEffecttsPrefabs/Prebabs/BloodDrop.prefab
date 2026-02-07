@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 5795905402317210728}
   - component: {fileID: 4716899185387710658}
   - component: {fileID: 5445407139497833519}
-  - component: {fileID: -8022286174771306270}
+  - component: {fileID: 5138868165713795836}
   m_Layer: 0
   m_Name: BloodDrop
   m_TagString: Untagged
@@ -87,7 +87,7 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &-8022286174771306270
+--- !u!114 &5138868165713795836
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

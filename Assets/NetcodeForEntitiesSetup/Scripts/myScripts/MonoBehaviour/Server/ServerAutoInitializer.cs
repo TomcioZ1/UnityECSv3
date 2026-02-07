@@ -1,3 +1,4 @@
+using System;
 using Unity.Entities;
 using Unity.NetCode;
 using Unity.Networking.Transport;
@@ -9,28 +10,36 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
     public class ServerAutoInitializer : MonoBehaviour
     {
         public ushort Port = 7979;
-        public string GameplaySceneName = "Gameplay"; // Nazwa sceny z Twoj¹ gr¹
+        public string GameplaySceneName = "Gameplay";
 
         void Start()
         {
             // 1. Sprawdzamy, czy to na pewno serwer (Headless)
-            // Dziêki temu ten sam kod nie popsuje Ci klienta na Windowsie
             if (Application.isBatchMode || Application.platform == RuntimePlatform.LinuxPlayer)
             {
                 Debug.Log("[SERVER] Wykryto tryb Dedicated Server. Inicjalizacja...");
+
+                // USTAWIENIA GLOBALNE DLA PROCESU SERWERA
+                // Zapobiega usypianiu procesora (bardzo wa¿ne na Linuxie!)
+                Screen.sleepTimeout = SleepTimeout.NeverSleep;
+
+                // Ustawiamy sta³y klatka¿, aby zadowoliæ Netcode Sleep Mode
+                // Powinien byæ zgodny z Twoim TickRate (zazwyczaj 60)
+                Application.targetFrameRate = 60;
+
+                // Serwer musi dzia³aæ zawsze, nawet jeœli "straci focus" (choæ w BatchMode i tak nie ma okna)
+                Application.runInBackground = true;
+
                 StartDedicatedServer();
             }
             else
             {
                 Debug.Log("[SERVER] To nie jest serwer dedykowany. Pomijanie autostartu.");
             }
-            Debug.Log("[SERVER] Wykryto tryb Dedicated Server. Inicjalizacja...");
         }
 
         void StartDedicatedServer()
         {
-            Application.runInBackground = true;
-
             // 2. Tworzymy œwiat serwera
             var server = ClientServerBootstrap.CreateServerWorld("ServerWorld");
             if (World.DefaultGameObjectInjectionWorld == null)
@@ -42,7 +51,6 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
 
             if (drvQuery.HasSingleton<NetworkStreamDriver>())
             {
-                // W Unity 6 Listen zwraca bool
                 bool success = drvQuery.GetSingletonRW<NetworkStreamDriver>().ValueRW.Listen(ep);
                 if (success)
                     Debug.Log($"[SERVER] SUCCESS: Port {Port} jest otwarty.");

@@ -105,14 +105,14 @@ public partial struct SampleCubeInput : ISystem
 
 
 
-[UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
+[UpdateInGroup(typeof(PredictedFixedStepSimulationSystemGroup))]
 [BurstCompile]
 public partial struct CubeMovementSystem : ISystem
 {
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        var moveSpeed = 3f;
+        var moveSpeed = 4f;
 
         // Na serwerze i kliencie wykonujemy tê sam¹ logikê ruchu dla synchronizacji
         foreach (var (input, velocity, trans) in
