@@ -36,7 +36,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
     }
 
     // STRONA KLIENTA: Wysy³a proœbê o wejœcie do gry
-    [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
+    [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
     public partial struct GoInGameClientSystem : ISystem
     {
         public void OnCreate(ref SystemState state)

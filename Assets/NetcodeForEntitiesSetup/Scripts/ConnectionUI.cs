@@ -6,90 +6,71 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using TMPro; // Wymagane dla pól tekstowych TextMeshPro
+
 #if ENABLE_INPUT_SYSTEM 
 using UnityEngine.InputSystem.UI;
 #endif
+
 namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
 {
-    /// <summary>
-    /// A basic example of a UI to start a host or client.
-    /// If you want to modify this Script please copy it into your own project and add it to your copied UI Prefab.
-    /// </summary>
     public class ConnectionUI : MonoBehaviour
     {
-        /// <summary>
-        /// The network port to use.
-        /// </summary>
-        public ushort NetworkPort = 7979;
+        [Header("UI References (TextMeshPro)")]
+        public TMP_InputField AddressInputField; // Pole na IP/Domenê (np. toys-firm.gl.at.ply.gg)
+        public TMP_InputField PortInputField;    // Pole na Port (np. 9805)
 
-        /// <summary>
-        /// The Ipv4 address to use.
-        /// </summary>
-        public string Address = "127.0.0.1";
-
-        /// <summary>
-        /// The name of the scene to load (without extension).
-        /// </summary>
+        [Header("Settings")]
         public string SceneToLoad;
-        
         public Text ConnectionLabel;
-        
         public Button StartHostButton;
-        
         public Button StartClientButton;
 
-        /// <summary>
-        /// Stores the old name of the local world (create by initial bootstrap).
-        /// It is reused later when the local world is created when coming back from game to the menu.
-        /// </summary>
         internal static string OldFrontendWorldName = string.Empty;
 
-        /// <summary>
-        /// Gets or sets the Connection status text in the UI.
-        /// </summary>
         public string ConnectionStatus
         {
-            get => ConnectionLabel.text;
-            set => ConnectionLabel.text = value;
+            get => ConnectionLabel != null ? ConnectionLabel.text : "";
+            set
+            {
+                if (ConnectionLabel != null)
+                    ConnectionLabel.text = value;
+            }
         }
 
-        /// <summary>
-        /// Called before a connection is established.
-        /// </summary>
         public void OnBeforeConnect()
         {
-            // Prevent disconnection on focus loss.
             Application.runInBackground = true;
         }
-        
-        /// <summary>
-        /// Called when the connection is established.
-        /// </summary>
+
         public void OnConnected()
         {
-            //Destroy the local simulation world to avoid the game scene to be loaded into it
-            //This prevent rendering (rendering from multiple world with presentation is not greatly supported)
-            //and other issues.
             DestroyLocalSimulationWorld();
-            
-            // Prevent loading the scene twice. This can happen when several widgets call OnConnect when a Session is created.
+
             var scene = SceneManager.GetSceneByName(SceneToLoad);
             if (scene.IsValid())
                 return;
-            
-            SceneManager.LoadSceneAsync(SceneToLoad, LoadSceneMode.Single); // single
+
+            SceneManager.LoadSceneAsync(SceneToLoad, LoadSceneMode.Single);
         }
 
         void Awake()
-        {   
-            StartHostButton.onClick.AddListener(StartClientServer);
-            StartClientButton.onClick.AddListener(StartClient);
-            
+        {
+            if (StartHostButton != null) StartHostButton.onClick.AddListener(StartClientServer);
+            if (StartClientButton != null) StartClientButton.onClick.AddListener(StartClient);
+
+            // Domyœlne wartoœci startowe w polach tekstowych
+            if (AddressInputField != null && string.IsNullOrEmpty(AddressInputField.text))
+                AddressInputField.text = "127.0.0.1";
+
+            if (PortInputField != null && string.IsNullOrEmpty(PortInputField.text))
+                PortInputField.text = "7979";
+
             if (!FindAnyObjectByType<EventSystem>())
             {
                 var inputType = typeof(StandaloneInputModule);
 #if ENABLE_INPUT_SYSTEM
-                inputType = typeof(InputSystemUIInputModule);                
+                inputType = typeof(InputSystemUIInputModule);
 #endif
                 var eventSystem = new GameObject("EventSystem", typeof(EventSystem), inputType);
                 eventSystem.transform.SetParent(transform);
@@ -109,7 +90,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                 }
             }
         }
-        
+
         void StartClientServer()
         {
             if (ClientServerBootstrap.RequestedPlayType != ClientServerBootstrap.PlayType.ClientAndServer)
@@ -118,48 +99,102 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                 return;
             }
 
+            // Pobieramy port wpisany przez u¿ytkownika
+            ushort port = ushort.TryParse(PortInputField.text, out var p) ? p : (ushort)7979;
+
             OnBeforeConnect();
             DisableButtons();
-           
+
             var server = ClientServerBootstrap.CreateServerWorld("ServerWorld");
             var client = ClientServerBootstrap.CreateClientWorld("ClientWorld");
-            
+
             if (World.DefaultGameObjectInjectionWorld == null)
                 World.DefaultGameObjectInjectionWorld = server;
 
             OnConnected();
-            
-            NetworkEndpoint ep = NetworkEndpoint.AnyIpv4.WithPort(NetworkPort);
+
+            // SERWER: S³ucha na wszystkich adresach (0.0.0.0) na wybranym porcie
+            NetworkEndpoint ep = NetworkEndpoint.AnyIpv4.WithPort(port);
+            using (var drvQuery = server.EntityManager.CreateEntityQuery(ComponentType.ReadWrite<NetworkStreamDriver>()))
             {
-                using var drvQuery = server.EntityManager.CreateEntityQuery(ComponentType.ReadWrite<NetworkStreamDriver>());
-                drvQuery.GetSingletonRW<NetworkStreamDriver>().ValueRW.Listen(ep);
+                if (drvQuery.HasSingleton<NetworkStreamDriver>())
+                    drvQuery.GetSingletonRW<NetworkStreamDriver>().ValueRW.Listen(ep);
             }
 
-            ep = NetworkEndpoint.LoopbackIpv4.WithPort(NetworkPort);
+            // KLIENT: £¹czy siê lokalnie (Loopback)
+            ep = NetworkEndpoint.LoopbackIpv4.WithPort(port);
+            using (var drvQuery = client.EntityManager.CreateEntityQuery(ComponentType.ReadWrite<NetworkStreamDriver>()))
             {
-                using var drvQuery = client.EntityManager.CreateEntityQuery(ComponentType.ReadWrite<NetworkStreamDriver>());
-                drvQuery.GetSingletonRW<NetworkStreamDriver>().ValueRW.Connect(client.EntityManager, ep);
+                if (drvQuery.HasSingleton<NetworkStreamDriver>())
+                    drvQuery.GetSingletonRW<NetworkStreamDriver>().ValueRW.Connect(client.EntityManager, ep);
             }
             AddConnectionUISystemToUpdateList();
         }
-        
+
         void StartClient()
         {
+            // 1. Pobieramy dane z TextMeshPro
+            string targetAddress = AddressInputField.text.Trim(); // Trim usuwa przypadkowe spacje
+            if (!ushort.TryParse(PortInputField.text, out ushort targetPort))
+            {
+                targetPort = 7979;
+            }
+
             OnBeforeConnect();
-            DisableButtons(); 
+            DisableButtons();
             var client = ClientServerBootstrap.CreateClientWorld("ClientWorld");
-            
+
             if (World.DefaultGameObjectInjectionWorld == null)
                 World.DefaultGameObjectInjectionWorld = client;
-            
+
             OnConnected();
 
-            var ep = NetworkEndpoint.Parse(Address, NetworkPort);
+            // 2. Rozwi¹zywanie adresu (DNS lub IP)
+            NetworkEndpoint ep = default;
+
+            // Sprawdzamy, czy to surowy adres IP (np. 127.0.0.1)
+            if (NetworkEndpoint.TryParse(targetAddress, targetPort, out ep))
             {
-                using var drvQuery = client.EntityManager.CreateEntityQuery(ComponentType.ReadWrite<NetworkStreamDriver>());
-                drvQuery.GetSingletonRW<NetworkStreamDriver>().ValueRW.Connect(client.EntityManager, ep);
+                ConnectWithEndpoint(client, ep);
             }
+            else
+            {
+                // Jeœli to nie IP, traktujemy to jako domenê (np. *.ply.gg)
+                // U¿ywamy GetHostAddresses, aby zamieniæ domenê na IP
+                try
+                {
+                    var addresses = System.Net.Dns.GetHostAddresses(targetAddress);
+                    if (addresses.Length > 0)
+                    {
+                        // Bierzemy pierwszy znaleziony adres IP i tworzymy endpoint
+                        ep = NetworkEndpoint.Parse(addresses[0].ToString(), targetPort);
+                        ConnectWithEndpoint(client, ep);
+                    }
+                    else
+                    {
+                        Debug.LogError($"Could not resolve DNS for: {targetAddress}");
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"DNS Resolution failed for {targetAddress}: {e.Message}");
+                }
+            }
+
             AddConnectionUISystemToUpdateList();
+        }
+
+        // Metoda pomocnicza do wykonania samego po³¹czenia
+        void ConnectWithEndpoint(World clientWorld, NetworkEndpoint ep)
+        {
+            using (var drvQuery = clientWorld.EntityManager.CreateEntityQuery(ComponentType.ReadWrite<NetworkStreamDriver>()))
+            {
+                if (drvQuery.HasSingleton<NetworkStreamDriver>())
+                {
+                    Debug.Log($"Connecting to {ep.Address}");
+                    drvQuery.GetSingletonRW<NetworkStreamDriver>().ValueRW.Connect(clientWorld.EntityManager, ep);
+                }
+            }
         }
 
         static void DestroyLocalSimulationWorld()
@@ -177,31 +212,25 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
 
         void DisableButtons()
         {
-            StartHostButton.interactable = false;
-            StartClientButton.interactable = false;
+            if (StartHostButton != null) StartHostButton.interactable = false;
+            if (StartClientButton != null) StartClientButton.interactable = false;
+            if (AddressInputField != null) AddressInputField.interactable = false;
+            if (PortInputField != null) PortInputField.interactable = false;
         }
     }
-    
-    /// <summary>
-    /// System making the link between the UI and the network connection status.
-    /// </summary>
+
     [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
     [UpdateInGroup(typeof(LateSimulationSystemGroup))]
     [DisableAutoCreation]
     public partial class ConnectionUISystem : SystemBase
     {
-        /// <summary>
-        /// The UI behaviour to update.
-        /// </summary>
         public ConnectionUI UIBehaviour;
         string m_PingText;
 
-        /// <summary>
-        /// Updates the UI with the connection status.
-        /// </summary>
         protected override void OnUpdate()
         {
-            CompleteDependency();
+            if (UIBehaviour == null) return;
+
             if (!SystemAPI.TryGetSingletonEntity<NetworkStreamConnection>(out var connectionEntity))
             {
                 UIBehaviour.ConnectionStatus = "Not connected!";
@@ -210,20 +239,25 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             }
 
             var connection = EntityManager.GetComponentData<NetworkStreamConnection>(connectionEntity);
-            var address = SystemAPI.GetSingletonRW<NetworkStreamDriver>().ValueRO.GetRemoteEndPoint(connection).Address;
+
+            if (!SystemAPI.TryGetSingleton<NetworkStreamDriver>(out var driver)) return;
+
+            var remoteEndPoint = driver.GetRemoteEndPoint(connection);
+            var address = remoteEndPoint.IsValid ? remoteEndPoint.Address : "Unknown";
+
             if (EntityManager.HasComponent<NetworkId>(connectionEntity))
             {
                 if (string.IsNullOrEmpty(m_PingText) || UnityEngine.Time.frameCount % 30 == 0)
                 {
                     var networkSnapshotAck = EntityManager.GetComponentData<NetworkSnapshotAck>(connectionEntity);
-                    m_PingText = networkSnapshotAck.EstimatedRTT > 0 ? $"{(int) networkSnapshotAck.EstimatedRTT}ms" : "Connected";
+                    m_PingText = networkSnapshotAck.EstimatedRTT > 0 ? $"{(int)networkSnapshotAck.EstimatedRTT}ms" : "Connected";
                 }
 
-                UIBehaviour.ConnectionStatus = $"<color=#00FF00>{address} | {m_PingText}:</color>"; //<color=#00FF00>{address} | {m_PingText}:</color>
+                UIBehaviour.ConnectionStatus = $"<color=#00FF00>{address} | {m_PingText}:</color>";
             }
             else
             {
-                UIBehaviour.ConnectionStatus = $"{address} | Connecting";
+                UIBehaviour.ConnectionStatus = $"{address} | Connecting...";
             }
         }
     }

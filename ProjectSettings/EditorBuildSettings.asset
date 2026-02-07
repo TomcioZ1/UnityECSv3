@@ -6,11 +6,11 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 0
-    path: Assets/Scenes/SampleScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
-  - enabled: 1
     path: Assets/NetcodeForEntitiesSetup/Scenes/ConnectionUI.unity
     guid: 1121f5a98315d184eab86f4f9d430582
+  - enabled: 1
+    path: Assets/NetcodeForEntitiesSetup/Scenes/ServerScene.unity
+    guid: 7b0f10c97014f0d4d8af4acaf941fb01
   - enabled: 1
     path: Assets/NetcodeForEntitiesSetup/Scenes/Gameplay.unity
     guid: 3da9e85c20f4f8a498b9ade458fa1308

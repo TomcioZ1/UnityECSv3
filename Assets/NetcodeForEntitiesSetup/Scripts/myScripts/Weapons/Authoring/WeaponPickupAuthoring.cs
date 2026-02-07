@@ -1,5 +1,6 @@
 using Unity.Entities;
 using UnityEngine;
+using Unity.NetCode;
 
 // Definiujemy Enum, ¿eby ³atwo wybieraæ broñ w Inspektorze
 public enum WeaponType : byte
@@ -34,6 +35,9 @@ public class WeaponPickupAuthoring : MonoBehaviour
                 WeaponId = (byte)authoring.Type,
                 Ammo = authoring.AmmoCount
             });
+
+            //AddComponent(entity, new GhostInstance());
+
         }
     }
 }
