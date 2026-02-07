@@ -93,6 +93,8 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
 
         void StartClientServer()
         {
+            Debug.Log("Start client-server");
+
             if (ClientServerBootstrap.RequestedPlayType != ClientServerBootstrap.PlayType.ClientAndServer)
             {
                 Debug.LogError($"Creating client/server worlds is not allowed if playmode is set to {ClientServerBootstrap.RequestedPlayType}");
@@ -133,6 +135,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
 
         void StartClient()
         {
+            Debug.Log("Start client");
             // 1. Pobieramy dane z TextMeshPro
             string targetAddress = AddressInputField.text.Trim(); // Trim usuwa przypadkowe spacje
             if (!ushort.TryParse(PortInputField.text, out ushort targetPort))

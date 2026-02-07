@@ -15,17 +15,16 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         {
             // 1. Sprawdzamy, czy to na pewno serwer (Headless)
             // Dziêki temu ten sam kod nie popsuje Ci klienta na Windowsie
-            /* if (Application.isBatchMode || Application.platform == RuntimePlatform.LinuxPlayer)
-             {
-                 Debug.Log("[SERVER] Wykryto tryb Dedicated Server. Inicjalizacja...");
-                 StartDedicatedServer();
-             }
-             else
-             {
-                 Debug.Log("[SERVER] To nie jest serwer dedykowany. Pomijanie autostartu.");
-             }*/
+            if (Application.isBatchMode || Application.platform == RuntimePlatform.LinuxPlayer)
+            {
+                Debug.Log("[SERVER] Wykryto tryb Dedicated Server. Inicjalizacja...");
+                StartDedicatedServer();
+            }
+            else
+            {
+                Debug.Log("[SERVER] To nie jest serwer dedykowany. Pomijanie autostartu.");
+            }
             Debug.Log("[SERVER] Wykryto tryb Dedicated Server. Inicjalizacja...");
-            StartDedicatedServer();
         }
 
         void StartDedicatedServer()

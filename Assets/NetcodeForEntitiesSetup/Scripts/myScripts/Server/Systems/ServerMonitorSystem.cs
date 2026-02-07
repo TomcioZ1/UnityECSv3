@@ -2,51 +2,53 @@ using Unity.Entities;
 using Unity.NetCode;
 using UnityEngine;
 
-[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
-[UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
-public partial struct ServerMonitorSystem : ISystem
+[WorldSystemFilter(WorldSystemFilterFlags.LocalSimulation | WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ServerSimulation)]
+public partial struct WorldMonitorSystem : ISystem
 {
     private double _nextLogTime;
-    private const double LogInterval = 20.0;
-
-    public void OnCreate(ref SystemState state)
-    {
-        // Upewniamy siê, ¿e œwiat Netcode jest gotowy
-        state.RequireForUpdate<NetworkTime>();
-        _nextLogTime = 0;
-    }
+    private const double LogInterval = 5.0;
 
     public void OnUpdate(ref SystemState state)
     {
-        // U¿ywamy czasu œwiata (World.Time), który w ECS jest standardem
-        // W ServerSimulation jest on to¿samy z czasem serwera
+        // W ECS World.Time.ElapsedTime to domyœlnie double
         double currentTime = state.World.Time.ElapsedTime;
 
         if (currentTime >= _nextLogTime)
         {
-            LogServerStatus(ref state);
+            LogActiveWorlds();
             _nextLogTime = currentTime + LogInterval;
         }
     }
 
-    private void LogServerStatus(ref SystemState state)
+    private void LogActiveWorlds()
     {
-        float currentDelta = state.World.Time.DeltaTime;
-        float actualTickRate = currentDelta > 0 ? 1.0f / currentDelta : 0;
+        string report = "<color=#00FFFF>[WORLD MONITOR]</color> Aktywne instancje œwiatów:\n";
 
-        // Liczymy graczy
-        var playerQuery = state.GetEntityQuery(ComponentType.ReadOnly<NetworkId>());
-        int playerCount = playerQuery.CalculateEntityCount();
+        foreach (var world in World.All)
+        {
+            string type = GetWorldTypeDescription(world);
+            report += $"- <b>{world.Name}</b> | Typ: {type}\n";
+        }
 
-        // Sprawdzamy obci¹¿enie (dla TickRate 30)
-        float targetDelta = 1.0f / 30.0f;
-        bool isOverloaded = currentDelta > (targetDelta * 1.15f);
+        Debug.Log(report);
+    }
 
-        string statusIndicator = isOverloaded ? "[OVERLOADED]" : "[STABLE]";
+    private string GetWorldTypeDescription(World world)
+    {
+        // U¿ywamy metod rozszerzaj¹cych z Unity.NetCode
+        if (world.IsServer())
+        {
+            return "<color=#FF4444>SERVER WORLD</color>";
+        }
 
-        Debug.Log($"<color=#00FF00>[SERVER INFO]</color> {statusIndicator}\n" +
-                  $"Graczy online: {playerCount} | " +
-                  $"TickRate: {actualTickRate:F1} Hz | " +
-                  $"FrameTime: {currentDelta * 1000:F2} ms");
+        if (world.IsClient())
+        {
+            if (world.IsThinClient())
+                return "<color=#FFFF00>THIN CLIENT</color>";
+
+            return "<color=#4444FF>CLIENT WORLD</color>";
+        }
+
+        return "<color=#AAAAAA>LOCAL/OTHER</color>";
     }
 }
