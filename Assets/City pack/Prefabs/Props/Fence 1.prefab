@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 5218417440861425206}
   - component: {fileID: -4077755400424199476}
   - component: {fileID: -4488286345980769368}
+  - component: {fileID: 6991079154776990121}
   m_Layer: 0
   m_Name: Fence 1
   m_TagString: Untagged
@@ -342,3 +343,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   StartHealth: 100
+--- !u!114 &6991079154776990121
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8002243975426974626}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea123f1c50565124babba1c4b6015d42, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dropPrefab: {fileID: 2694941533570073613, guid: 70238b83910684b428452b2bf078482f, type: 3}
+  amount: 20
