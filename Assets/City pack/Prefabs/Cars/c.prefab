@@ -355,5 +355,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ea123f1c50565124babba1c4b6015d42, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  dropPrefab: {fileID: 2694941533570073613, guid: 0cf2ff60a57556243a93271534ee34d2, type: 3}
+  dropPrefab: {fileID: 2694941533570073613, guid: 952cfd6f301adc44dbca9d30ebce7c02, type: 3}
   amount: 50

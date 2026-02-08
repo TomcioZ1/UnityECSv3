@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 2412546199726863897}
   - component: {fileID: 18035830641479862}
   - component: {fileID: 6739827731902320287}
+  - component: {fileID: -3929470885460539866}
   m_Layer: 0
   m_Name: Bush 2G
   m_TagString: Untagged
@@ -342,3 +343,17 @@ MonoBehaviour:
   Importance: 1
   MaxSendRate: 0
   prefabId: cfb14e8c8cf49284ba80b805a2f1f6f1
+--- !u!114 &-3929470885460539866
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7968291078721835063}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea123f1c50565124babba1c4b6015d42, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dropPrefab: {fileID: 2694941533570073613, guid: e3001831a7a168447956480c08cd2806, type: 3}
+  amount: 25

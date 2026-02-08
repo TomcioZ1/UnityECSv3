@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: -3226137474436712034}
   - component: {fileID: 7379151823806164693}
   - component: {fileID: -8650703290379716950}
+  - component: {fileID: 6797968282816254641}
   m_Layer: 0
   m_Name: Bushesbox 3V
   m_TagString: Untagged
@@ -342,3 +343,17 @@ MonoBehaviour:
   Importance: 1
   MaxSendRate: 0
   prefabId: 28a844f8307383d47bc916493242daaa
+--- !u!114 &6797968282816254641
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5568417101504120277}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea123f1c50565124babba1c4b6015d42, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dropPrefab: {fileID: 2694941533570073613, guid: c369df96182eecf44886f837f2c75d26, type: 3}
+  amount: 25

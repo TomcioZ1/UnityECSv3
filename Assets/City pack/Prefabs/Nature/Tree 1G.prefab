@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: -1141912937138904512}
   - component: {fileID: -8607957677713986027}
   - component: {fileID: -2872542131421586561}
+  - component: {fileID: 8191459345361458973}
   m_Layer: 0
   m_Name: Tree 1G
   m_TagString: Untagged
@@ -342,3 +343,17 @@ MonoBehaviour:
   Importance: 1
   MaxSendRate: 0
   prefabId: 48e1e6c7eb46d884a80ac4619ec80e30
+--- !u!114 &8191459345361458973
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5741824188723336595}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea123f1c50565124babba1c4b6015d42, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dropPrefab: {fileID: 2694941533570073613, guid: e3001831a7a168447956480c08cd2806, type: 3}
+  amount: 25

@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: -8847179489672328595}
   - component: {fileID: -1120654500942921551}
   - component: {fileID: -6372841375473982591}
+  - component: {fileID: 3516283893895574254}
   m_Layer: 0
   m_Name: f4
   m_TagString: Untagged
@@ -342,3 +343,17 @@ MonoBehaviour:
   Importance: 1
   MaxSendRate: 0
   prefabId: 9991319701e359d4eaff4259dfb01f03
+--- !u!114 &3516283893895574254
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5653783094887906858}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea123f1c50565124babba1c4b6015d42, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dropPrefab: {fileID: 2694941533570073613, guid: 952cfd6f301adc44dbca9d30ebce7c02, type: 3}
+  amount: 50

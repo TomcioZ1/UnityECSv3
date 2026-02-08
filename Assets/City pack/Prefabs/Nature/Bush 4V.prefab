@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: -267764924408716204}
   - component: {fileID: 5747589320739864293}
   - component: {fileID: 7521349555908491754}
+  - component: {fileID: -983525538411168250}
   m_Layer: 0
   m_Name: Bush 4V
   m_TagString: Untagged
@@ -342,3 +343,17 @@ MonoBehaviour:
   Importance: 1
   MaxSendRate: 0
   prefabId: 30dd92018ebd59e46b648b847eb1dd6c
+--- !u!114 &-983525538411168250
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3188687378389268203}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea123f1c50565124babba1c4b6015d42, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dropPrefab: {fileID: 2694941533570073613, guid: c369df96182eecf44886f837f2c75d26, type: 3}
+  amount: 25

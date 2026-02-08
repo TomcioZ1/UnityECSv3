@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 4355335173118092786}
   - component: {fileID: 4877147501697573232}
   - component: {fileID: 5585192457918041900}
+  - component: {fileID: -4230821304177788176}
   m_Layer: 0
   m_Name: Bushesbox 2G
   m_TagString: Untagged
@@ -342,3 +343,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   StartHealth: 100
+--- !u!114 &-4230821304177788176
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 239601548000718338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea123f1c50565124babba1c4b6015d42, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dropPrefab: {fileID: 2694941533570073613, guid: e3001831a7a168447956480c08cd2806, type: 3}
+  amount: 25

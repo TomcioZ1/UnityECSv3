@@ -3,6 +3,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Physics;
+using Unity.Physics.Authoring;
 using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
@@ -33,8 +34,20 @@ public partial struct BoxVisualSystem : ISystem
             if (currentHp <= 0)
             {
                 box.ValueRW.isDestoryed = true;
-                if (isServer) ecb.DestroyEntity(entity);
-                else ecb.AddComponent<Disabled>(entity);
+                /*if (isServer) ecb.DestroyEntity(entity);
+                else ecb.AddComponent<Disabled>(entity);*/
+
+
+                // 1. CA£KOWITE WY£¥CZENIE RENDEROWANIA
+                // Usuwamy komponenty odpowiedzialne za to, ¿e obiekt jest rysowany
+                ecb.RemoveComponent<MaterialMeshInfo>(entity);
+                // Dodatkowo dodajemy tag (na wszelki wypadek dla systemów cullingowych)
+                ecb.AddComponent<DisableRendering>(entity);
+
+                // 2. CA£KOWITE WY£¥CZENIE FIZYKI
+                ecb.RemoveComponent<Unity.Physics.PhysicsCollider>(entity);
+                
+
 
                 continue;
             }

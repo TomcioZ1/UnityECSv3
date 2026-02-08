@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: -801203214601510748}
   - component: {fileID: 2177624055733635223}
   - component: {fileID: 4115976628638576822}
+  - component: {fileID: -1545737058387790751}
   m_Layer: 0
   m_Name: Modernbuilding 3
   m_TagString: Untagged
@@ -492,3 +493,17 @@ MonoBehaviour:
         Tag07: 0
     m_SerializedVersion: 1
   m_SerializedVersion: 3
+--- !u!114 &-1545737058387790751
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8193363072063453747}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea123f1c50565124babba1c4b6015d42, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dropPrefab: {fileID: 2694941533570073613, guid: 3c8969bbcd33bfc488ba2ceb8cdd5b3e, type: 3}
+  amount: 50

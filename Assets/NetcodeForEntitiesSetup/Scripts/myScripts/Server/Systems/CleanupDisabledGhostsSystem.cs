@@ -1,33 +1,28 @@
-/*using Unity.Entities;
+using Unity.Entities;
 using Unity.NetCode;
-using Unity.Collections;
 
+// System dzia³a tylko w œwiecie klienta i symulacji
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
-// Uruchamiamy na samym koñcu, ¿eby mieæ pewnoœæ, ¿e Netcode skoñczy³ synchronizacjê
-[UpdateInGroup(typeof(GhostSimulationSystemGroup), OrderLast = true)]
-public partial struct CleanupDisabledGhostsSystem : ISystem
+[UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
+public partial struct BoxClientVisualSystem : ISystem
 {
     public void OnUpdate(ref SystemState state)
     {
-        // Pobieramy ECB, aby bezpiecznie usuwaæ encje
-        var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
-        var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
+        // U¿ywamy EntityCommandBuffer, aby bezpiecznie dodawaæ komponenty podczas iteracji
+        var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
+            .CreateCommandBuffer(state.WorldUnmanaged);
 
-        // PÊTLA PO RZECZACH Z DISABLED:
-        // 1. Szukamy komponentu BoxComponent (lub innego, który identyfikuje Twoje obiekty)
-        // 2. Musi posiadaæ tag Disabled (WithAll)
-        // 3. .WithPresent<Disabled>() - wymusza na ECS pokazanie tych encji w zapytaniu
+        // Zapytanie: szukamy BoxComponent, który ma flagê zniszczenia, 
+        // ale encja NIE ma jeszcze komponentu Disabled (¿eby nie dodawaæ go co klatkê)
         foreach (var (box, entity) in SystemAPI.Query<RefRO<BoxComponent>>()
-                     .WithAll<Disabled>()
-                     .WithPresent<Disabled>()
+                     .WithNone<Disabled>()
                      .WithEntityAccess())
         {
-            // Logika usuwania:
-            // Poniewa¿ serwer ju¿ "wy³¹czy³" ten obiekt (doda³ Disabled),
-            // klient mo¿e go teraz bezpiecznie usun¹æ ze swojego œwiata.
-            ecb.DestroyEntity(entity);
-
-            // UnityEngine.Debug.Log($"[Cleanup] Usuniêto encjê {entity.Index} (by³a Disabled)");
+            if (box.ValueRO.isDestoryed)
+            {
+                // Dodanie Disabled wy³¹czy renderowanie, fizykê i wszystkie inne systemy dla tej encji
+                ecb.AddComponent<Disabled>(entity);
+            }
         }
     }
-}*/
+}

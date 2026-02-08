@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 3830160138264616967}
   - component: {fileID: -6384764599187552891}
   - component: {fileID: 9181531589864653868}
+  - component: {fileID: 7036006608492230479}
   m_Layer: 0
   m_Name: Bush 3G
   m_TagString: Untagged
@@ -342,3 +343,17 @@ MonoBehaviour:
   Importance: 1
   MaxSendRate: 0
   prefabId: 659866ab9b1417a4bb5f36be56e8ce1b
+--- !u!114 &7036006608492230479
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2228867026986394308}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea123f1c50565124babba1c4b6015d42, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dropPrefab: {fileID: 2694941533570073613, guid: e3001831a7a168447956480c08cd2806, type: 3}
+  amount: 25

@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 309671335132668486}
   - component: {fileID: 6930066120559015049}
   - component: {fileID: 3873515355152237952}
+  - component: {fileID: 6571873035480260018}
   m_Layer: 0
   m_Name: House 3 b
   m_TagString: Untagged
@@ -342,3 +343,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   StartHealth: 300
+--- !u!114 &6571873035480260018
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8570251183701995553}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea123f1c50565124babba1c4b6015d42, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dropPrefab: {fileID: 2694941533570073613, guid: 3c8969bbcd33bfc488ba2ceb8cdd5b3e, type: 3}
+  amount: 50

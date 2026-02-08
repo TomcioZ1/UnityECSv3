@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: -8693107173927981494}
   - component: {fileID: 7851339400179156076}
   - component: {fileID: -916499111145825109}
+  - component: {fileID: 5799904658405914717}
   m_Layer: 0
   m_Name: Bush 5G
   m_TagString: Untagged
@@ -343,6 +344,20 @@ MonoBehaviour:
   Importance: 1
   MaxSendRate: 0
   prefabId: 12d383a8fc55b8a4586e9ae12634eabe
+--- !u!114 &5799904658405914717
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3145975647548187654}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea123f1c50565124babba1c4b6015d42, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dropPrefab: {fileID: 2694941533570073613, guid: e3001831a7a168447956480c08cd2806, type: 3}
+  amount: 25
 --- !u!1 &6379680069551142599
 GameObject:
   m_ObjectHideFlags: 0

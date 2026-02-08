@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: -2517909211704500751}
   - component: {fileID: -5729662673989528403}
   - component: {fileID: 8754138926967032181}
+  - component: {fileID: -8360297482088345582}
   m_Layer: 0
   m_Name: HouseBig 4 c
   m_TagString: Untagged
@@ -492,3 +493,17 @@ MonoBehaviour:
         Tag07: 0
     m_SerializedVersion: 1
   m_SerializedVersion: 3
+--- !u!114 &-8360297482088345582
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4418122018258310655}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea123f1c50565124babba1c4b6015d42, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dropPrefab: {fileID: 2694941533570073613, guid: 3c8969bbcd33bfc488ba2ceb8cdd5b3e, type: 3}
+  amount: 50

@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 4184193886343000452}
   - component: {fileID: 6864467500136984864}
   - component: {fileID: 3339185769759471931}
+  - component: {fileID: 3390539208062661773}
   m_Layer: 0
   m_Name: 'Garage 2 '
   m_TagString: Untagged
@@ -342,3 +343,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   StartHealth: 300
+--- !u!114 &3390539208062661773
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1948947650005525176}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea123f1c50565124babba1c4b6015d42, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dropPrefab: {fileID: 2694941533570073613, guid: 0cf2ff60a57556243a93271534ee34d2, type: 3}
+  amount: 50
