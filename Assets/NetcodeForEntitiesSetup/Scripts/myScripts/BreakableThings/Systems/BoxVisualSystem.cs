@@ -1,8 +1,11 @@
 using Unity.Burst;
 using Unity.Entities;
-using Unity.NetCode;
-using Unity.Transforms;
 using Unity.Mathematics;
+using Unity.NetCode;
+using Unity.Physics;
+using Unity.Rendering;
+using Unity.Transforms;
+using UnityEngine;
 
 [UpdateInGroup(typeof(PredictedFixedStepSimulationSystemGroup))]
 [BurstCompile]
@@ -24,12 +27,14 @@ public partial struct BoxVisualSystem : ISystem
             float maxHp = health.ValueRO.MaxHealthPoints > 0 ? health.ValueRO.MaxHealthPoints : 100f;
             float healthPercent = math.saturate(currentHp / maxHp);
 
+
+
+
             if (currentHp <= 0)
             {
+                box.ValueRW.isDestoryed = true;
                 if (isServer) ecb.DestroyEntity(entity);
                 else ecb.AddComponent<Disabled>(entity);
-
-
 
                 continue;
             }
@@ -56,4 +61,11 @@ public partial struct BoxVisualSystem : ISystem
             transform.ValueRW.Position.y = box.ValueRO.InitialY - offset;
         }
     }
+
+
+
 }
+
+
+
+

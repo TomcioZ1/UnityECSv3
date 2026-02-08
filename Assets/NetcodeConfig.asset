@@ -72,4 +72,4 @@ MonoBehaviour:
   ClientReceiveQueueCapacity: 64
   ServerSendQueueCapacity: 512
   ServerReceiveQueueCapacity: 512
-  MaxMessageSize: 1400
+  MaxMessageSize: 1000
