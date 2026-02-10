@@ -42,14 +42,13 @@ GameObject:
   - component: {fileID: 3497295350896495023}
   - component: {fileID: 4554893921428316609}
   - component: {fileID: 8588925272862458815}
-  - component: {fileID: 8377868579686646873}
-  - component: {fileID: 4924128583932505855}
   - component: {fileID: 8389473133781689413}
   - component: {fileID: 5996855946115863355}
-  - component: {fileID: 5346902258940447177}
   - component: {fileID: 1992405043338316944}
   - component: {fileID: 6736410154009256315}
   - component: {fileID: 1541173667968424935}
+  - component: {fileID: 1564575669888324683}
+  - component: {fileID: 1425959254360458395}
   m_Layer: 0
   m_Name: PlayerCapsule
   m_TagString: Player
@@ -129,33 +128,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &8377868579686646873
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4189385226845935106}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da7dff93111d0e74fa90fb327664ea91, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  WeaponSocket: {fileID: 8407486205789541572}
-  LeftHandSocket: {fileID: 7792656592789517708}
-  RightHandSocket: {fileID: 1225959373791146678}
---- !u!114 &4924128583932505855
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4189385226845935106}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b1dfc530a54d3b049afc4421afb72488, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &8389473133781689413
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -184,7 +156,7 @@ MonoBehaviour:
   SupportAutoCommandTarget: 1
   TrackInterpolationDelay: 1
   GhostGroup: 0
-  UsePreSerialization: 1
+  UsePreSerialization: 0
   UseSingleBaseline: 0
   RollbackPredictedSpawnedGhostState: 0
   RollbackPredictionOnStructuralChanges: 1
@@ -194,18 +166,6 @@ MonoBehaviour:
   Importance: 50
   MaxSendRate: 0
   prefabId: 931dc0664b489dc4eb535b55d78f4cd7
---- !u!114 &5346902258940447177
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4189385226845935106}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 138f4d73e6be1174c97a5c366e805d82, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1992405043338316944
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -419,6 +379,34 @@ MonoBehaviour:
     Tag05: 1
     Tag06: 1
     Tag07: 1
+--- !u!114 &1564575669888324683
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4189385226845935106}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48cab04096ec3694fb9eacc3c7441f97, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  WeaponSocket: {fileID: 8407486205789541572}
+  LeftHandSocket: {fileID: 7792656592789517708}
+  RightHandSocket: {fileID: 1225959373791146678}
+  InitialHealth: 100
+--- !u!114 &1425959254360458395
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4189385226845935106}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f51c630882d9004f866f84de7216c42, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &4802109308915642917
 GameObject:
   m_ObjectHideFlags: 0

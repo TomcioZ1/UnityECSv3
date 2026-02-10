@@ -4,116 +4,40 @@ using Unity.NetCode;
 using UnityEngine;
 using UnityEngine.UI;
 using Unity.Collections;
-using System.ComponentModel.Design;
-using Unity.VisualScripting;
-using System.Linq;
-
-
-
-
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 public class ChatPanel : MonoBehaviour
 {
     [Header("UI Elements")]
-    public GameObject panel;
     public TMP_InputField inputField;
     public Transform content;
     public GameObject messagePrefab;
     public ScrollRect scrollRect;
 
-    private EntityManager em;
-
-    void Start()
-    {
-        panel.SetActive(false);
-        //mockWiadomosci();
-        // Pobranie EntityManager z ClientWorld
-        if (ClientServerBootstrap.ClientWorld != null && ClientServerBootstrap.ClientWorld.IsCreated)
-            em = ClientServerBootstrap.ClientWorld.EntityManager;
-        else
-            Debug.LogWarning("ClientWorld nie jest jeszcze gotowy!");
-    }
-
     void Update()
     {
-        // Sprawdzanie Enter
-        bool enterPressed = false;
-#if ENABLE_INPUT_SYSTEM
-        var keyboard = Keyboard.current;
-        enterPressed = keyboard != null && keyboard.enterKey.wasPressedThisFrame;
-#else
-        enterPressed = UnityEngine.Input.GetKeyDown(KeyCode.Return);
-#endif
-
         World clientWorld = GetClientWorld();
         if (clientWorld == null) return;
 
         var em = clientWorld.EntityManager;
 
-        // 1. Musimy znaleŸæ encjê, która posiada ten komponent
-        var query = em.CreateEntityQuery(typeof(PressedKeyesComponent));
-
-        if (!query.IsEmpty)
-        {
-            Entity entity = query.GetSingletonEntity();
-
-            // 1. Pobierasz KOPIE danych
-            var data = em.GetComponentData<PressedKeyesComponent>(entity);
-            
-
-            if (enterPressed && !em.GetComponentData<PressedKeyesComponent>(entity).EscPressed)
-            {
-                //Debug.Log("Enter pressed in ChatPanel");
-                if (!panel.activeSelf)
-                {
-                    // Otwórz panel chatu
-                    OpenChat();
-                    // 2. Zmieniasz wartoœæ w KOPII
-                    data.EnterPressed = true;
-
-                }
-                else if (!string.IsNullOrWhiteSpace(inputField.text))
-                {
-                    // Wyœlij wiadomoœæ
-                    SendMessage();
-                    OpenChat();
-                    // 2. Zmieniasz wartoœæ w KOPII
-                    data.EnterPressed = true;
-
-                }
-                else
-                {
-                    CloseChat();
-                    // 2. Zmieniasz wartoœæ w KOPII
-                    data.EnterPressed = false;
-
-                }
-                // 3. KLUCZOWY KROK: Wysy³asz zmodyfikowan¹ kopiê z powrotem do ECS
-                em.SetComponentData(entity, data);
-            }
-        }
-
-        // Obs³uga przychodz¹cych wiadomoœci
+        // Obs³uga przychodz¹cych wiadomoœci (ChatMessageEvent musi istnieæ w Twoim kodzie)
         var msgQuery = em.CreateEntityQuery(typeof(ChatMessageEvent));
-        var msgEntities = msgQuery.ToEntityArray(Allocator.Temp);
-
-        foreach (var e in msgEntities)
+        if (!msgQuery.IsEmpty)
         {
-            var data = em.GetComponentData<ChatMessageEvent>(e);
-            AddMessage($"<color=#00FF00>{data.Sender}:</color> {data.Message}");
-            em.DestroyEntity(e); //  event jednorazowy
+            var msgEntities = msgQuery.ToEntityArray(Allocator.Temp);
+
+            foreach (var e in msgEntities)
+            {
+                var data = em.GetComponentData<ChatMessageEvent>(e);
+                AddMessage($"<color=#00FF00>{data.Sender}:</color> {data.Message}");
+                em.DestroyEntity(e);
+            }
+            msgEntities.Dispose();
         }
-
-        msgEntities.Dispose();
-
     }
 
     public void OpenChat()
     {
-        panel.SetActive(true);
         inputField.text = "";
         inputField.ActivateInputField();
         inputField.Select();
@@ -121,29 +45,43 @@ public class ChatPanel : MonoBehaviour
 
     public void CloseChat()
     {
-        panel.SetActive(false);
         inputField.DeactivateInputField();
+        // Czyœcimy pole przy zamkniêciu, ¿eby nie "wisia³o" przy nastêpnym otwarciu
+        inputField.text = "";
     }
 
     public void SendMessage()
     {
         if (string.IsNullOrWhiteSpace(inputField.text)) return;
-        if (em == null) return;
 
-        // pobierz po³¹czenie klienta z serwerem
+        World clientWorld = GetClientWorld();
+        if (clientWorld == null) return;
+        var em = clientWorld.EntityManager;
+
+        // 1. Pobierz po³¹czenie - U¿ywamy ToEntityArray zamiast GetSingletonEntity
         var connectionQuery = em.CreateEntityQuery(typeof(NetworkStreamConnection));
         if (connectionQuery.IsEmpty) return;
 
-        var connection = connectionQuery.GetSingletonEntity();
+        // Pobieramy pierwsz¹ encjê z brzegu (dla klienta zawsze bêdzie to po³¹czenie z serwerem)
+        using var connections = connectionQuery.ToEntityArray(Allocator.Temp);
+        Entity connection = connections[0];
 
+        // 2. Pobierz nazwê lokalnego gracza
+        var playerQuery = em.CreateEntityQuery(typeof(PlayerName), typeof(GhostOwnerIsLocal));
+        if (playerQuery.IsEmpty)
+        {
+            Debug.LogWarning("Nie znaleziono lokalnego gracza!");
+            return;
+        }
+
+        using var players = playerQuery.ToEntityArray(Allocator.Temp);
+        Entity localPlayer = players[0];
+
+        // 3. Stwórz RPC
         var e = em.CreateEntity();
-
         em.AddComponentData(e, new ChatMessageRpc
         {
-            Sender = em.GetComponentData<PlayerName>(
-            em.CreateEntityQuery(typeof(PlayerName), typeof(GhostOwnerIsLocal))
-              .ToEntityArray(Allocator.Temp)[0]
-            ).Value,
+            Sender = em.GetComponentData<PlayerName>(localPlayer).Value,
             Message = new FixedString128Bytes(inputField.text)
         });
 
@@ -164,23 +102,10 @@ public class ChatPanel : MonoBehaviour
         if (tmp != null)
             tmp.text = text;
 
-        // Auto-scroll
+        // Auto-scroll do do³u
         Canvas.ForceUpdateCanvases();
         scrollRect.verticalNormalizedPosition = 0f;
     }
-
-
-  /*  void mockWiadomosci()
-    {
-        for(int i = 0; i < 15; i++)
-        {
-            AddMessage(i.ToString());
-        }
-        Canvas.ForceUpdateCanvases();
-        scrollRect.verticalNormalizedPosition = 0f;
-    }*/
-
-
 
     private World GetClientWorld()
     {

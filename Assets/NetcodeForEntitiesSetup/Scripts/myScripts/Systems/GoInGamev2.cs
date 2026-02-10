@@ -41,7 +41,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
     {
         public void OnCreate(ref SystemState state)
         {
-            state.RequireForUpdate<CubeSpawner>();
+            state.RequireForUpdate<PlayerSpawner>();
 
             var query = new EntityQueryBuilder(Allocator.Temp)
                 .WithAll<NetworkId>()
@@ -82,7 +82,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
-            state.RequireForUpdate<CubeSpawner>();
+            state.RequireForUpdate<PlayerSpawner>();
 
             var query = new EntityQueryBuilder(Allocator.Temp)
                 .WithAll<GoInGameRequest>()
@@ -97,13 +97,13 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
 
             // Dane spawnera (miejsce narodzin gracza)
-            var spawnerEntity = SystemAPI.GetSingletonEntity<CubeSpawner>();
-            var spawnerData = SystemAPI.GetComponent<CubeSpawner>(spawnerEntity);
+            var spawnerEntity = SystemAPI.GetSingletonEntity<PlayerSpawner>();
+            var spawnerData = SystemAPI.GetComponent<PlayerSpawner>(spawnerEntity);
             var spawnerTransform = SystemAPI.GetComponent<LocalTransform>(spawnerEntity);
 
             // POBIERANIE SKALI Z PREFABA:
             // Odczytujemy LocalTransform bezpoœrednio z encji prefaba zdefiniowanej w CubeSpawner
-            var prefabTransform = state.EntityManager.GetComponentData<LocalTransform>(spawnerData.Cube);
+            var prefabTransform = state.EntityManager.GetComponentData<LocalTransform>(spawnerData.Player);
 
             var networkIdLookup = state.GetComponentLookup<NetworkId>(true);
 
@@ -129,7 +129,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                 ecb.AddComponent<NetworkStreamInGame>(connection);
 
                 // 1. Instancjonowanie gracza
-                var player = ecb.Instantiate(spawnerData.Cube);
+                var player = ecb.Instantiate(spawnerData.Player);
 
                 // 2. USTAWIENIE TRANSFORMACJI:
                 // Pozycja i Rotacja ze spawnera na scenie, Skala z Twojego Prefaba

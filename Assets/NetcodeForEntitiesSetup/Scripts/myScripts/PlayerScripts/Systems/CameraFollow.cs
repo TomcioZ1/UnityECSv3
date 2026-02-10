@@ -4,6 +4,7 @@ using Unity.Mathematics;
 using Unity.NetCode;
 using UnityEngine;
 using Unity.Multiplayer.Center.NetcodeForEntitiesSetup;
+using Unity.Physics.Systems;
 
 [UpdateInGroup(typeof(PresentationSystemGroup))]
 public partial class CameraFollowSystem : SystemBase

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class UIManager : MonoBehaviour
 {
@@ -9,10 +10,14 @@ public class UIManager : MonoBehaviour
     public GameObject leaderboardUI;
     public GameObject pauseMenuUI;
 
+    private ChatPanel _chatPanel;
+
     private void Awake()
     {
         Instance = this;
-        // Na starcie wy³¹czamy wszystko
+        _chatPanel = chatUI.GetComponent<ChatPanel>();
+
+        // Startowy stan
         chatUI.SetActive(false);
         leaderboardUI.SetActive(false);
         pauseMenuUI.SetActive(false);
@@ -20,14 +25,17 @@ public class UIManager : MonoBehaviour
 
     void Update()
     {
+        var keyboard = Keyboard.current;
+        if (keyboard == null) return;
+
         // 1. ESC - Najwy¿szy priorytet
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (keyboard.escapeKey.wasPressedThisFrame)
         {
             ToggleEscape();
         }
 
-        // 2. ENTER - Chat (blokowany przez ESC)
-        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+        // 2. ENTER - Chat (blokowany przez Pauzê)
+        if (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame)
         {
             if (!pauseMenuUI.activeSelf)
             {
@@ -35,8 +43,8 @@ public class UIManager : MonoBehaviour
             }
         }
 
-        // 3. TAB - Leaderboard (blokowany przez ESC i Chat)
-        if (Input.GetKeyDown(KeyCode.Tab))
+        // 3. TAB - Leaderboard (blokowany przez Pauzê i Chat)
+        if (keyboard.tabKey.wasPressedThisFrame)
         {
             if (!pauseMenuUI.activeSelf && !chatUI.activeSelf)
             {
@@ -47,44 +55,66 @@ public class UIManager : MonoBehaviour
 
     private void ToggleEscape()
     {
-        // Jeœli cokolwiek innego jest w³¹czone, po prostu to wy³¹cz i zakoñcz
         if (chatUI.activeSelf || leaderboardUI.activeSelf)
         {
             chatUI.SetActive(false);
             leaderboardUI.SetActive(false);
-            SetCursorState(false); // Chowamy kursor po wyjœciu z UI
+            _chatPanel.CloseChat();
+            SetCursorState(true);
+
             return;
         }
-
-        // Jeœli nic innego nie by³o w³¹czone, prze³¹czamy Pause Menu
-        bool isPaused = !pauseMenuUI.activeSelf;
-        pauseMenuUI.SetActive(isPaused);
-        SetCursorState(isPaused);
+        else
+        {
+            bool isPaused = !pauseMenuUI.activeSelf;
+            pauseMenuUI.SetActive(isPaused);
+        }
     }
 
     private void ToggleChat()
     {
-        bool isChatting = !chatUI.activeSelf;
-        chatUI.SetActive(isChatting);
-
-        // Zawsze upewniamy siê, ¿e leaderboard jest wy³¹czony przy chacie
-        leaderboardUI.SetActive(false);
-
-        SetCursorState(isChatting);
+        if (!chatUI.activeSelf)
+        {
+            // Otwieramy chat
+            chatUI.SetActive(true);
+            leaderboardUI.SetActive(false);
+            _chatPanel.OpenChat();
+            SetCursorState(false);
+            
+        }
+        else
+        {
+            // Chat jest ju¿ otwarty
+            if (string.IsNullOrWhiteSpace(_chatPanel.inputField.text))
+            {
+                // Puste pole -> Zamykamy
+                chatUI.SetActive(false);
+                _chatPanel.CloseChat();
+                SetCursorState(true);
+            }
+            else
+            {
+                // Jest tekst -> Wysy³amy i zostajemy w chacie
+                _chatPanel.SendMessage();
+                _chatPanel.inputField.ActivateInputField(); // Re-focus
+            }
+        }
     }
 
     private void ToggleLeaderboard()
     {
-        bool isShowingLeaderboard = !leaderboardUI.activeSelf;
-        leaderboardUI.SetActive(isShowingLeaderboard);
-
-        SetCursorState(isShowingLeaderboard);
+        bool isShowing = !leaderboardUI.activeSelf;
+        leaderboardUI.SetActive(isShowing);
+        if (isShowing)
+        {
+            // Pobieramy skrypt i odœwie¿amy dane z ECS
+            leaderboardUI.GetComponent<LeaderboardUIPanel>().RefreshLeaderboard();
+        }
     }
-
-    private void SetCursorState(bool visible)
+    public void SetCursorState(bool visible)
     {
-        // Pomocnicza funkcja do zarz¹dzania kursorem myszy
         Cursor.visible = visible;
         Cursor.lockState = visible ? CursorLockMode.None : CursorLockMode.Locked;
     }
+
 }

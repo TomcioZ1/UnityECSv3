@@ -1,9 +1,11 @@
+using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.NetCode;
 
 [GhostComponent]
-[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+/*[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]*/
+[StructLayout(LayoutKind.Sequential)]
 public struct LeaderboardElement : IBufferElementData
 {
     [GhostField] public FixedString32Bytes PlayerName;

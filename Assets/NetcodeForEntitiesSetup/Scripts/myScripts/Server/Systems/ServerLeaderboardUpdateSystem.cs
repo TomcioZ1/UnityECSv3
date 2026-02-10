@@ -31,7 +31,7 @@ public partial struct ServerLeaderboardUpdateSystem : ISystem
 
             ecb.AddComponent<InLeaderboardTag>(entity);
             needsRefresh = true;
-            Debug.Log($"[LEADERBOARD] Dodano nowego gracza do rankingu: {playerName.ValueRO.Value}");
+            //Debug.Log($"[LEADERBOARD] Dodano nowego gracza do rankingu: {playerName.ValueRO.Value}");
         }
 
         // --- SEKCJA B: OBS£UGA PUNKTÓW Z EVENTÓW ZABÓJSTW ---
@@ -49,7 +49,7 @@ public partial struct ServerLeaderboardUpdateSystem : ISystem
                     leaderboard[i] = entry;
 
                     needsRefresh = true;
-                    Debug.Log($"[LEADERBOARD] Gracz {killer} zdoby³ punkt! (Suma: {entry.Kills})");
+                    //Debug.Log($"[LEADERBOARD] Gracz {killer} zdoby³ punkt! (Suma: {entry.Kills})");
                     break;
                 }
             }
@@ -62,7 +62,7 @@ public partial struct ServerLeaderboardUpdateSystem : ISystem
         if (needsRefresh)
         {
             SortLeaderboard(leaderboard);
-            LogLeaderboardStatus(leaderboard);
+            //LogLeaderboardStatus(leaderboard);
         }
 
         ecb.Playback(state.EntityManager);
@@ -82,7 +82,7 @@ public partial struct ServerLeaderboardUpdateSystem : ISystem
                 entry.Kills++;
                 leaderboard[i] = entry;
                 SortLeaderboard(leaderboard);
-                LogLeaderboardStatus(leaderboard);
+                //LogLeaderboardStatus(leaderboard);
                 return;
             }
         }

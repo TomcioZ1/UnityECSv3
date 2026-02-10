@@ -38,7 +38,7 @@ MonoBehaviour:
     MaxPredictionStepBatchSizeRepeatedTick: 0
     MaxPredictionStepBatchSizeFirstTimeTick: 0
     PredictionLoopUpdateMode: 0
-    InterpolationDelayJitterScale: 1.25
+    InterpolationDelayJitterScale: 3
     InterpolationDelayMaxDeltaTicksFraction: 0.1
     InterpolationDelayCorrectionFraction: 0.1
     InterpolationTimeScaleMin: 0.85

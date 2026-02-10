@@ -3,6 +3,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Physics;
+using Unity.Physics.Systems;
 using Unity.Transforms;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
@@ -21,11 +22,11 @@ public struct MyPlayerInput : IInputComponentData
 }
 
 [DisallowMultipleComponent]
-public class CubeInputAuthoring : MonoBehaviour
+public class PlayerInputAuthoring : MonoBehaviour
 {
-    class Baking : Baker<CubeInputAuthoring>
+    class PlayerInputAuthoringBaker : Baker<PlayerInputAuthoring>
     {
-        public override void Bake(CubeInputAuthoring authoring)
+        public override void Bake(PlayerInputAuthoring authoring)
         {
             var entity = GetEntity(TransformUsageFlags.Dynamic);
             AddComponent(entity, new MyPlayerInput { choosenWeapon = 3 });
@@ -35,7 +36,7 @@ public class CubeInputAuthoring : MonoBehaviour
 
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
 [UpdateInGroup(typeof(GhostInputSystemGroup))]
-public partial struct SampleCubeInput : ISystem
+public partial struct MyPlayerInputSystem : ISystem
 {
     public void OnUpdate(ref SystemState state)
     {
@@ -105,9 +106,10 @@ public partial struct SampleCubeInput : ISystem
 
 
 
-[UpdateInGroup(typeof(PredictedFixedStepSimulationSystemGroup))]
+[UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
+[UpdateAfter(typeof(PhysicsSystemGroup))]
 [BurstCompile]
-public partial struct CubeMovementSystem : ISystem
+public partial struct MyPlayerMovementSystem : ISystem
 {
     [BurstCompile]
     public void OnUpdate(ref SystemState state)

@@ -6,31 +6,31 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
     /// <summary>
     /// Component data that identifies a cube spawner and gives access to the cube prefab.
     /// </summary>
-    public struct CubeSpawner : IComponentData
+    public struct PlayerSpawner : IComponentData
     {
         /// <summary>
         /// The Cube prefab converted to an entity.
         /// </summary>
-        public Entity Cube;
+        public Entity Player;
     }
 
     /// <summary>
     /// Baker that transforms our cube prefab into an entity and creates a spawner entity.
     /// </summary>
     [DisallowMultipleComponent]
-    public class CubeSpawnerAuthoring : MonoBehaviour
+    public class PlayerSpawnerAuthoring : MonoBehaviour
     {
         /// <summary>
         /// The cube prefab to spawn.
         /// </summary>
-        public GameObject Cube;
+        public GameObject Player;
 
-        class SpawnerBaker : Baker<CubeSpawnerAuthoring>
+        class PlayerSpawnerAuthoringBaker : Baker<PlayerSpawnerAuthoring>
         {
-            public override void Bake(CubeSpawnerAuthoring authoring)
+            public override void Bake(PlayerSpawnerAuthoring authoring)
             {
-                CubeSpawner component = default(CubeSpawner);
-                component.Cube = GetEntity(authoring.Cube, TransformUsageFlags.Dynamic);
+                PlayerSpawner component = default(PlayerSpawner);
+                component.Player = GetEntity(authoring.Player, TransformUsageFlags.Dynamic);
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent(entity, component);
             }
