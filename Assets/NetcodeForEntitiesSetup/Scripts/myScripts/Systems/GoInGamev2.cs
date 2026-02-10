@@ -63,7 +63,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                 ecb.AddComponent<NetworkStreamInGame>(entity);
 
                 // Pobieramy imiê z UI (MonoBehaviour)
-                string playerNameStr = PlayerNameInput.Instance != null ? PlayerNameInput.Instance.Name : "Player";
+                string playerNameStr = PlayerInfoClass.PlayerName != null ? PlayerInfoClass.PlayerName : "Player";
 
                 // Tworzymy encjê RPC
                 var req = ecb.CreateEntity();

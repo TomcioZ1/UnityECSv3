@@ -52,6 +52,9 @@ public partial struct PlayerDeathSystem : ISystem
 
                 // Logi s¹ bezpieczne w Burst, o ile u¿ywasz sta³ych stringów lub FixedStrings
                 Debug.Log($"<color=white>[SERVER]</color> <color=red><b>{victimName}</b></color> was killed by <color=orange>{killerName}</color>");
+                var eventEntity = ecb.CreateEntity();
+                ecb.AddComponent(eventEntity, new KillEvent { KillerName = killerName });
+
 
                 if (activeHands.ValueRO.LeftHandEntity != Entity.Null)
                     ecb.DestroyEntity(activeHands.ValueRO.LeftHandEntity);

@@ -3,6 +3,7 @@ using Unity.Entities;
 using Unity.NetCode;
 using TMPro;
 
+[GhostComponent]
 public struct PlayerName : IComponentData
 {
     [GhostField]
