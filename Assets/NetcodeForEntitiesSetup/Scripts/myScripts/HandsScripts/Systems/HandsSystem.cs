@@ -3,6 +3,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Transforms;
+using UnityEngine;
 
 [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation | WorldSystemFilterFlags.ClientSimulation)]
@@ -10,11 +11,15 @@ using Unity.Transforms;
 public partial struct HandsSystem : ISystem
 {
     private ComponentLookup<LocalTransform> _transformLookup;
+    // Dodajemy lookup dla Parent, aby bezpiecznie sprawdzaæ jego istnienie
+    private ComponentLookup<Parent> _parentLookup;
 
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
         _transformLookup = state.GetComponentLookup<LocalTransform>(false);
+        _parentLookup = state.GetComponentLookup<Parent>(true); // ReadOnly
+        state.RequireForUpdate<NetworkTime>();
     }
 
     [BurstCompile]
@@ -25,31 +30,24 @@ public partial struct HandsSystem : ISystem
         var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
 
+        // Odœwie¿amy lookupy
         _transformLookup.Update(ref state);
+        _parentLookup.Update(ref state);
 
-        float dt = SystemAPI.Time.DeltaTime;
-        float attackSpeed = 4f;
-        float punchDistance = 0.25f;
+        const float attackSpeed = 3f;
+        const float punchDistance = 0.25f;
 
-        // --- 1. LOGIKA ATAKU (Tylko w ticku sieciowym) ---
-        // To wykonuje siê 30 razy na sekundê. Zapewnia synchronizacjê obra¿eñ.
-        if (networkTime.IsFinalPredictionTick)
+        // --- 1. LOGIKA SYMULACJI (Tick-based) ---
+        if (networkTime.IsFirstTimeFullyPredictingTick)
         {
+            float dt = SystemAPI.Time.DeltaTime;
+
             foreach (var (input, anim, inventory) in
                      SystemAPI.Query<RefRO<MyPlayerInput>, RefRW<HandAttackData>, RefRO<PlayerInventory>>()
                      .WithAll<Simulate>())
             {
-                byte activeSlot = inventory.ValueRO.ActiveSlotIndex;
-                bool hasWeaponInSlot = activeSlot switch
-                {
-                    1 => inventory.ValueRO.Slot1_WeaponId > 0,
-                    2 => inventory.ValueRO.Slot2_WeaponId > 0,
-                    3 => inventory.ValueRO.Slot3_HandsId > 0,
-                    4 => inventory.ValueRO.Slot4_GrenadeId > 0,
-                    _ => false
-                };
-
-                bool canPunch = input.ValueRO.leftMouseButton == 1 && !hasWeaponInSlot;
+                bool hasWeapon = CheckIfHasWeapon(inventory.ValueRO);
+                bool canPunch = input.ValueRO.leftMouseButton == 1 && !hasWeapon;
 
                 if (canPunch && !anim.ValueRO.IsAttacking)
                 {
@@ -73,9 +71,7 @@ public partial struct HandsSystem : ISystem
             }
         }
 
-        // --- 2. WIZUALIZACJA (W ka¿dej klatce predykcji) ---
-        // Usuwamy warunek IsFinalPredictionTick. Dziêki temu ruch r¹k 
-        // bêdzie aktualizowany tak czêsto, jak pozwala na to procesor/monitor.
+        // --- 2. WIZUALIZACJA (P³ynna) ---
         foreach (var (anim, socket, activeHands) in
                  SystemAPI.Query<RefRO<HandAttackData>, HandsSocket, RefRW<ActiveHands>>())
         {
@@ -84,13 +80,15 @@ public partial struct HandsSystem : ISystem
 
             if (anim.ValueRO.IsAttacking)
             {
-                // math.saturate zabezpiecza przed wartoœciami spoza zakresu 0-1 podczas interpolacji
-                float punchEffect = math.sin(math.PI * math.saturate(anim.ValueRO.AttackProgress));
+                float progress = math.saturate(anim.ValueRO.AttackProgress);
+                float punchEffect = math.sin(math.PI * progress);
                 float fwd = punchEffect * punchDistance;
-                float side = punchEffect * (punchDistance * 0.4f);
+                float side = punchEffect * (punchDistance * 0.3f);
 
-                if (anim.ValueRO.AttackIsLeft) leftOffset = new float3(side, 0, fwd);
-                else rightOffset = new float3(-side, 0, fwd);
+                if (anim.ValueRO.AttackIsLeft)
+                    leftOffset = new float3(side, 0, fwd);
+                else
+                    rightOffset = new float3(-side, 0, fwd);
             }
 
             UpdateHand(ecb, activeHands.ValueRO.LeftHandEntity, socket.LeftHandSocket, leftOffset, ref activeHands.ValueRW.PrevLeftHand);
@@ -101,16 +99,34 @@ public partial struct HandsSystem : ISystem
     [BurstCompile]
     private void UpdateHand(EntityCommandBuffer ecb, Entity hand, Entity socket, float3 offset, ref Entity prevHand)
     {
+        // Sprawdzamy czy encja istnieje i ma transform za pomoc¹ lookupa
         if (hand == Entity.Null || !_transformLookup.HasComponent(hand)) return;
 
         if (hand != prevHand)
         {
-            ecb.AddComponent(hand, new Parent { Value = socket });
+            // U¿ywamy lookupa do sprawdzenia czy ma komponent Parent
+            if (_parentLookup.HasComponent(hand))
+                ecb.SetComponent(hand, new Parent { Value = socket });
+            else
+                ecb.AddComponent(hand, new Parent { Value = socket });
+
             prevHand = hand;
         }
 
         var lt = _transformLookup[hand];
         lt.Position = offset;
         _transformLookup[hand] = lt;
+    }
+
+    private static bool CheckIfHasWeapon(PlayerInventory inv)
+    {
+        return inv.ActiveSlotIndex switch
+        {
+            1 => inv.Slot1_WeaponId > 0,
+            2 => inv.Slot2_WeaponId > 0,
+            3 => false,
+            4 => inv.Slot4_GrenadeId > 0,
+            _ => false
+        };
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using Unity.Entities;
 using Unity.NetCode;
 using Unity.Networking.Transport;
@@ -15,26 +16,23 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         void Start()
         {
             // 1. Sprawdzamy, czy to na pewno serwer (Headless)
-            if (Application.isBatchMode || Application.platform == RuntimePlatform.LinuxPlayer)
+            if (Application.isBatchMode)
             {
-                Debug.Log("[SERVER] Wykryto tryb Dedicated Server. Inicjalizacja...");
+                UnityEngine.Debug.Log("[SERVER] Wykryto tryb Dedicated Server. Inicjalizacja...");
 
                 // USTAWIENIA GLOBALNE DLA PROCESU SERWERA
                 // Zapobiega usypianiu procesora (bardzo wa¿ne na Linuxie!)
                 Screen.sleepTimeout = SleepTimeout.NeverSleep;
-
-                // Ustawiamy sta³y klatka¿, aby zadowoliæ Netcode Sleep Mode
-                // Powinien byæ zgodny z Twoim TickRate (zazwyczaj 60)
-                Application.targetFrameRate = 60;
-
-                // Serwer musi dzia³aæ zawsze, nawet jeœli "straci focus" (choæ w BatchMode i tak nie ma okna)
                 Application.runInBackground = true;
+                QualitySettings.vSyncCount = 0;
+                Application.targetFrameRate = 0;
+
 
                 StartDedicatedServer();
             }
             else
             {
-                Debug.Log("[SERVER] To nie jest serwer dedykowany. Pomijanie autostartu.");
+                UnityEngine.Debug.Log("[SERVER] To nie jest serwer dedykowany. Pomijanie autostartu.");
             }
         }
 
@@ -53,9 +51,9 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             {
                 bool success = drvQuery.GetSingletonRW<NetworkStreamDriver>().ValueRW.Listen(ep);
                 if (success)
-                    Debug.Log($"[SERVER] SUCCESS: Port {Port} jest otwarty.");
+                    UnityEngine.Debug.Log($"[SERVER] SUCCESS: Port {Port} jest otwarty.");
                 else
-                    Debug.LogError($"[SERVER] ERROR: Nie uda³o siê otworzyæ portu {Port}!");
+                    UnityEngine.Debug.LogError($"[SERVER] ERROR: Nie uda³o siê otworzyæ portu {Port}!");
             }
 
             // 4. £adujemy scenê gry

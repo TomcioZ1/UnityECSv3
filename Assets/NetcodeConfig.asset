@@ -16,7 +16,7 @@ MonoBehaviour:
   EnableClientServerBootstrap: 0
   ClientServerTickRate:
     SimulationTickRate: 30
-    PredictedFixedStepSimulationTickRatio: 1
+    PredictedFixedStepSimulationTickRatio: 2
     NetworkTickRate: 0
     MaxSimulationStepsPerFrame: 1
     MaxSimulationStepBatchSize: 4

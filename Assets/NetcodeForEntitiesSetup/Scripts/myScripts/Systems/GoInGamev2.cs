@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
 {
-    // System pomocniczy zapewniaj¹cy poprawne rejestrowanie RPC w dynamicznych zestawach
+    // System pomocniczy zapewniaj¹cy poprawne rejestrowanie RPC
     [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ServerSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
     [UpdateInGroup(typeof(InitializationSystemGroup))]
     [CreateAfter(typeof(RpcSystem))]
@@ -29,13 +29,11 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         }
     }
 
-    // Definicja proœby RPC
     public struct GoInGameRequest : IRpcCommand
     {
         public FixedString64Bytes PlayerName;
     }
 
-    // STRONA KLIENTA: Wysy³a proœbê o wejœcie do gry
     [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
     public partial struct GoInGameClientSystem : ISystem
     {
@@ -50,7 +48,6 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             state.RequireForUpdate(query);
         }
 
-        // Brak Burst, poniewa¿ odwo³ujemy siê do MonoBehaviour (PlayerNameInput)
         public void OnUpdate(ref SystemState state)
         {
             var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
@@ -59,13 +56,10 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                          .WithNone<NetworkStreamInGame>()
                          .WithEntityAccess())
             {
-                // Oznaczamy po³¹czenie, aby nie wysy³aæ proœby wielokrotnie
                 ecb.AddComponent<NetworkStreamInGame>(entity);
 
-                // Pobieramy imiê z UI (MonoBehaviour)
                 string playerNameStr = PlayerInfoClass.PlayerName != null ? PlayerInfoClass.PlayerName : "Player";
 
-                // Tworzymy encjê RPC
                 var req = ecb.CreateEntity();
                 ecb.AddComponent(req, new GoInGameRequest { PlayerName = playerNameStr });
                 ecb.AddComponent(req, new SendRpcCommandRequest { TargetConnection = entity });
@@ -75,14 +69,23 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         }
     }
 
-    // STRONA SERWERA: Obs³uguje proœbê, spawnuje gracza i ustawia skalê z prefaba
     [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
     public partial struct GoInGameServerSystem : ISystem
     {
+        // 1. Deklaracja lookupów w strukturze
+        private ComponentLookup<NetworkId> _networkIdLookup;
+        private ComponentLookup<NetworkStreamInGame> _networkStreamInGameLookup;
+        private ComponentLookup<LocalTransform> _localTransformLookup;
+
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<PlayerSpawner>();
+
+            // 2. Inicjalizacja lookupów
+            _networkIdLookup = state.GetComponentLookup<NetworkId>(true);
+            _networkStreamInGameLookup = state.GetComponentLookup<NetworkStreamInGame>(true);
+            _localTransformLookup = state.GetComponentLookup<LocalTransform>(true);
 
             var query = new EntityQueryBuilder(Allocator.Temp)
                 .WithAll<GoInGameRequest>()
@@ -94,18 +97,19 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
+            // 3. Aktualizacja lookupów przed u¿yciem
+            _networkIdLookup.Update(ref state);
+            _networkStreamInGameLookup.Update(ref state);
+            _localTransformLookup.Update(ref state);
+
             var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
 
-            // Dane spawnera (miejsce narodzin gracza)
             var spawnerEntity = SystemAPI.GetSingletonEntity<PlayerSpawner>();
             var spawnerData = SystemAPI.GetComponent<PlayerSpawner>(spawnerEntity);
             var spawnerTransform = SystemAPI.GetComponent<LocalTransform>(spawnerEntity);
 
-            // POBIERANIE SKALI Z PREFABA:
-            // Odczytujemy LocalTransform bezpoœrednio z encji prefaba zdefiniowanej w CubeSpawner
-            var prefabTransform = state.EntityManager.GetComponentData<LocalTransform>(spawnerData.Player);
-
-            var networkIdLookup = state.GetComponentLookup<NetworkId>(true);
+            // Odczytujemy skalê z prefaba przez zaktualizowany lookup
+            var prefabTransform = _localTransformLookup[spawnerData.Player];
 
             foreach (var (rpcRequest, goInGameRequest, rpcEntity) in
                      SystemAPI.Query<RefRO<ReceiveRpcCommandRequest>, RefRO<GoInGameRequest>>()
@@ -113,41 +117,32 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             {
                 var connection = rpcRequest.ValueRO.SourceConnection;
 
-                // Sprawdzamy czy po³¹czenie jest poprawne i czy gracz ju¿ nie jest w grze
-                if (!networkIdLookup.HasComponent(connection) || state.EntityManager.HasComponent<NetworkStreamInGame>(connection))
+                // Sprawdzamy po³¹czenie u¿ywaj¹c lookupów zamiast EntityManager (dzia³a szybciej i z Burst)
+                if (!_networkIdLookup.HasComponent(connection) || _networkStreamInGameLookup.HasComponent(connection))
                 {
                     ecb.DestroyEntity(rpcEntity);
                     continue;
                 }
 
-                var networkId = networkIdLookup[connection];
+                var networkId = _networkIdLookup[connection];
                 var playerName = goInGameRequest.ValueRO.PlayerName;
 
                 Debug.Log($"[Server] Spawning '{playerName}' w {spawnerTransform.Position} ze skal¹ prefaba {prefabTransform.Scale}");
 
-                // Dodajemy komponent InGame do po³¹czenia
                 ecb.AddComponent<NetworkStreamInGame>(connection);
 
-                // 1. Instancjonowanie gracza
                 var player = ecb.Instantiate(spawnerData.Player);
 
-                // 2. USTAWIENIE TRANSFORMACJI:
-                // Pozycja i Rotacja ze spawnera na scenie, Skala z Twojego Prefaba
                 ecb.SetComponent(player, LocalTransform.FromPositionRotationScale(
                     spawnerTransform.Position,
                     spawnerTransform.Rotation,
                     prefabTransform.Scale));
 
-                // 3. Konfiguracja Netcode
                 ecb.SetComponent(player, new GhostOwner { NetworkId = networkId.Value });
-
-                // Zak³adamy, ¿e masz komponent PlayerName (IComponentData) do przechowywania imienia
                 ecb.SetComponent(player, new PlayerName { Value = playerName });
 
-                // Powi¹zanie encji gracza z po³¹czeniem (czyszczenie przy roz³¹czeniu)
                 ecb.AppendToBuffer(connection, new LinkedEntityGroup { Value = player });
 
-                // Usuwamy proœbê RPC po przetworzeniu
                 ecb.DestroyEntity(rpcEntity);
             }
         }

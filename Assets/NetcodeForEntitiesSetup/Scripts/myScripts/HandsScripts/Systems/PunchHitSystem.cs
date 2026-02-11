@@ -6,7 +6,7 @@ using Unity.Physics.Systems;
 using Unity.NetCode;
 using Unity;
 
-[UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
+[UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 public partial struct PunchHitSystem : ISystem
 {

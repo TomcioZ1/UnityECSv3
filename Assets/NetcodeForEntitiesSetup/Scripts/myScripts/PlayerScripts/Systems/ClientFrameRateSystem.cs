@@ -1,4 +1,4 @@
-/*using Unity.Entities;
+using Unity.Entities;
 using Unity.NetCode;
 using UnityEngine;
 
@@ -8,7 +8,7 @@ public partial class ClientFrameRateSystem : SystemBase
 {
     protected override void OnCreate()
     {
-        int targetFPS = 30; // Ustaw docelow¹ liczbê klatek na sekundê
+        int targetFPS = 60; // Ustaw docelow¹ liczbê klatek na sekundê
         // To wykona siê tylko w œwiecie klienta
         QualitySettings.vSyncCount = 0;
         Application.targetFrameRate = targetFPS;
@@ -16,4 +16,4 @@ public partial class ClientFrameRateSystem : SystemBase
     }
 
     protected override void OnUpdate() { }
-}*/
+}

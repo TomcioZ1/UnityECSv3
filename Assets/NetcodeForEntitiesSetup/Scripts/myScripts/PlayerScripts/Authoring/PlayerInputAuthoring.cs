@@ -105,15 +105,15 @@ public partial struct MyPlayerInputSystem : ISystem
 
 
 
-
+//[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
-[UpdateAfter(typeof(PhysicsSystemGroup))]
 [BurstCompile]
 public partial struct MyPlayerMovementSystem : ISystem
 {
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        
         var moveSpeed = 4f;
 
         // Na serwerze i kliencie wykonujemy tê sam¹ logikê ruchu dla synchronizacji
