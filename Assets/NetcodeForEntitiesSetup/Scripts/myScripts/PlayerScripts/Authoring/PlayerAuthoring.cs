@@ -4,6 +4,7 @@ using Unity.Mathematics;
 
 public struct PlayerTag : IComponentData { }
 
+
 [DisallowMultipleComponent]
 public class PlayerAuthoring : MonoBehaviour
 {
@@ -52,8 +53,9 @@ public class PlayerAuthoring : MonoBehaviour
             // Skala
             AddComponent(entity, new BaseScale { Value = authoring.transform.localScale });
 
+
             // Interpolacja
-           
+
 
         }
     }

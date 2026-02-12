@@ -1,76 +1,71 @@
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
-using Unity.Physics;
-using Unity.Physics.Systems;
 using Unity.NetCode;
 using Unity.Transforms;
+using Unity.Physics;
 
-[UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
-[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
-public partial struct ProjectileHitSystem : ISystem
+[UpdateInGroup(typeof(PredictedFixedStepSimulationSystemGroup))]
+[UpdateAfter(typeof(ProjectileSpawnSystem))]
+[BurstCompile]
+public partial struct ProjectileSimulationSystem : ISystem
 {
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        state.Dependency.Complete(); // naprawia blad rece i pociski chca zmienic cos w tym samym czasie
+        state.Dependency.Complete();
 
         var collisionWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().CollisionWorld;
         var healthLookup = SystemAPI.GetComponentLookup<HealthComponent>(false);
-
-        var currentTime = SystemAPI.Time.ElapsedTime;
         var dt = SystemAPI.Time.DeltaTime;
+        var currentTime = SystemAPI.Time.ElapsedTime;
 
-        foreach (var (proj, transform, entity) in
+        foreach (var (proj, transform) in
                  SystemAPI.Query<RefRW<ProjectileComponent>, RefRW<LocalTransform>>()
-                 .WithAll<Simulate>()
-                 .WithEntityAccess())
+                 .WithAll<Simulate>())
         {
+            // Pomiñ pociski, które ju¿ powinny znikn¹æ
             if (proj.ValueRO.DeathTime <= currentTime) continue;
 
             float3 start = transform.ValueRO.Position;
             float3 end = start + (proj.ValueRO.Velocity * dt);
 
-            // KONFIGURACJA FILTRA DLA TWOICH KATEGORII:
-            // BelongsTo: Pocisk (4)
-            // CollidesWith: Player (0) ORAZ Rzecz (3)
             var rayInput = new RaycastInput
             {
                 Start = start,
                 End = end,
                 Filter = new CollisionFilter
                 {
-                    BelongsTo = 1u << 4,
-                    CollidesWith = (1u << 0) | (1u << 3),
+                    BelongsTo = 1u << 4, // Pocisk
+                    CollidesWith = (1u << 0) | (1u << 3), // Gracz + Rzecz
                     GroupIndex = 0
                 }
             };
 
             if (collisionWorld.CastRay(rayInput, out var hit))
             {
-                // Ignoruj, jeœli promieñ trafi³ w gracza, który go wystrzeli³
                 if (hit.Entity == proj.ValueRO.Owner)
                 {
                     transform.ValueRW.Position = end;
                     continue;
                 }
 
-                // Logika obra¿eñ
-                if (healthLookup.HasComponent(hit.Entity))
+                // TRAFIENIE
+                transform.ValueRW.Position = hit.Position;
+                proj.ValueRW.DeathTime = (float)currentTime; // Sygna³ dla DestroySystem
+
+                // Obra¿enia tylko na Serwerze
+                if (state.WorldUnmanaged.IsServer() && healthLookup.HasComponent(hit.Entity))
                 {
                     var health = healthLookup[hit.Entity];
                     health.HealthPoints -= proj.ValueRO.Damage;
                     health.LastHitBy = proj.ValueRO.Owner;
                     healthLookup[hit.Entity] = health;
                 }
-
-                // Zatrzymanie pocisku na przeszkodzie
-                proj.ValueRW.DeathTime = currentTime;
-                transform.ValueRW.Position = hit.Position;
             }
             else
             {
-                // Brak przeszkód - swobodny lot
+                // Zwyk³y ruch, gdy brak kolizji
                 transform.ValueRW.Position = end;
             }
         }

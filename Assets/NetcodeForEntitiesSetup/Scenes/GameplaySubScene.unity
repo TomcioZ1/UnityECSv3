@@ -14298,9 +14298,9 @@ MonoBehaviour:
     x: -0
     y: -9.81
     z: -0
-  m_SubstepCount: 2
-  m_SolverIterationCount: 5
-  m_EnableSolverStabilizationHeuristic: 0
+  m_SubstepCount: 10
+  m_SolverIterationCount: 10
+  m_EnableSolverStabilizationHeuristic: 1
   m_MultiThreaded: 1
   m_CollisionTolerance: 0.05
   m_SynchronizeCollisionWorld: 1

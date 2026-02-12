@@ -7,12 +7,12 @@ using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-[UpdateInGroup(typeof(GhostInputSystemGroup))]
+[UpdateInGroup(typeof(PresentationSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
-[BurstCompile]
-public partial class FireInputSystem : SystemBase
+//[BurstCompile]
+public partial class FireShootDirectionSystem : SystemBase
 {
-    [BurstCompile]
+    //[BurstCompile]
     protected override void OnUpdate()
     {
         var cam = Camera.main;
@@ -41,9 +41,7 @@ public partial class FireInputSystem : SystemBase
         // Szukamy lokalnego gracza i aktualizujemy jego input
         foreach (var (input, transform) in SystemAPI.Query<RefRW<MyPlayerInput>, RefRO<LocalTransform>>().WithAll<GhostOwnerIsLocal>())
         {
-            if (input.ValueRO.leftMouseButton != 0)
-            {
-
+            
                 // Obliczamy kierunek
                 float3 direction = worldMousePoint - transform.ValueRO.Position;
                 direction.y = 0;
@@ -54,8 +52,9 @@ public partial class FireInputSystem : SystemBase
                     input.ValueRW.AimDirection = math.normalize(direction);
                 }
 
-            }
+            
 
         }
     }
 }
+

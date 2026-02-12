@@ -1,138 +1,131 @@
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
-using Unity.Multiplayer.Center.NetcodeForEntitiesSetup;
 using Unity.NetCode;
-using Unity.Transforms;
 using Unity.Physics;
-using UnityEngine;
+using Unity.Transforms;
 
 [UpdateInGroup(typeof(PredictedFixedStepSimulationSystemGroup))]
 [BurstCompile]
 public partial struct ProjectileSpawnSystem : ISystem
 {
-    private ComponentLookup<WeaponData> weaponDataLookup;
-    private ComponentLookup<WeaponWorkState> weaponStateLookup;
-    private ComponentLookup<NetworkId> networkIdLookup;
-    private ComponentLookup<LocalToWorld> ltwLookup;
-    private ComponentLookup<LocalTransform> ltLookup;
-    private ComponentLookup<PhysicsVelocity> velocityLookup;
-
-    [BurstCompile]
-    public void OnCreate(ref SystemState state)
-    {
-        weaponDataLookup = state.GetComponentLookup<WeaponData>(false);
-        weaponStateLookup = state.GetComponentLookup<WeaponWorkState>(false);
-        networkIdLookup = state.GetComponentLookup<NetworkId>(true);
-        ltwLookup = state.GetComponentLookup<LocalToWorld>(true);
-        ltLookup = state.GetComponentLookup<LocalTransform>(true);
-        velocityLookup = state.GetComponentLookup<PhysicsVelocity>(true);
-
-        state.RequireForUpdate<ProjectilePrefab>();
-        state.RequireForUpdate<BeginSimulationEntityCommandBufferSystem.Singleton>();
-    }
-
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        if (!SystemAPI.TryGetSingleton<ProjectilePrefab>(out var prefab)) return;
+        if (!SystemAPI.TryGetSingleton<ProjectilePrefab>(out var projectilePrefab)) return;
+        var networkTime = SystemAPI.GetSingleton<NetworkTime>();
 
-        state.Dependency.Complete();
-
-        weaponDataLookup.Update(ref state);
-        weaponStateLookup.Update(ref state);
-        networkIdLookup.Update(ref state);
-        ltwLookup.Update(ref state);
-        ltLookup.Update(ref state);
-        velocityLookup.Update(ref state);
+        if (!networkTime.IsFirstTimeFullyPredictingTick)
+            return;
 
         var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
 
         double currentTime = SystemAPI.Time.ElapsedTime;
 
-        foreach (var (input, inventory, playerEntity) in
-                 SystemAPI.Query<RefRO<MyPlayerInput>, RefRO<PlayerInventory>>()
+        foreach (var (input, inventory, playerTransform, playerEntity) in
+                 SystemAPI.Query<RefRO<MyPlayerInput>, RefRO<PlayerInventory>, RefRO<LocalTransform>>()
                  .WithAll<Simulate>()
                  .WithEntityAccess())
         {
-            if (inventory.ValueRO.ActiveSlotIndex == 3 || inventory.ValueRO.CurrentlySpawnedWeaponId == 0)
+            Entity weaponEntity = inventory.ValueRO.CurrentWeaponEntity;
+
+            if (weaponEntity == Entity.Null ||
+                !SystemAPI.HasComponent<WeaponData>(weaponEntity) ||
+                !SystemAPI.HasComponent<WeaponWorkState>(weaponEntity))
                 continue;
 
-            Entity wEntity = inventory.ValueRO.CurrentWeaponEntity;
+            var weaponData = SystemAPI.GetComponent<WeaponData>(weaponEntity);
+            var workState = SystemAPI.GetComponent<WeaponWorkState>(weaponEntity);
 
-            if (wEntity == Entity.Null || !weaponDataLookup.HasComponent(wEntity) || !weaponStateLookup.HasComponent(wEntity))
-                continue;
+            // --- LOGIKA RELOADU ---
+            // 1. SprawdŸ czy gracz chce prze³adowaæ (np. klawisz R) lub czy magazynek jest pusty
+            byte reloadRequested = input.ValueRO.reloadRequested; // Zak³adam, ¿e masz to w MyPlayerInput
 
-            var weapon = weaponDataLookup[wEntity];
-            var wState = weaponStateLookup[wEntity];
-
-            if (input.ValueRO.leftMouseButton == 1 && !wState.IsReloading && weapon.currentAmmo > 0 && currentTime >= wState.NextShotTime)
+            if (!workState.IsReloading && (reloadRequested == 1 || weaponData.currentAmmo <= 0) && weaponData.currentAmmo < weaponData.magSize)
             {
-                weapon.currentAmmo--;
-                wState.NextShotTime = (float)currentTime + weapon.fireRate;
+                workState.IsReloading = true;
+                workState.ReloadTimer = (float)currentTime + weaponData.reloadTime;
+                SystemAPI.SetComponent(weaponEntity, workState);
+            }
 
-                weaponDataLookup[wEntity] = weapon;
-                weaponStateLookup[wEntity] = wState;
-
-                if (weapon.ProjectileSpawner != Entity.Null && ltwLookup.HasComponent(weapon.ProjectileSpawner))
+            // 2. SprawdŸ czy czas prze³adowania dobieg³ koñca
+            if (workState.IsReloading)
+            {
+                if (currentTime >= workState.ReloadTimer)
                 {
-                    var spawnerLTW = ltwLookup[weapon.ProjectileSpawner];
+                    weaponData.currentAmmo = weaponData.magSize; // Uzupe³nij amunicjê
+                    workState.IsReloading = false;
 
-                    // --- TWOJA PROŒBA: RÊCZNA KOREKTA POZYCJI NA PODSTAWIE INPUTU ---
-                    // Pobieramy aktualn¹ pozycjê lufy
-                    float3 spawnPos = spawnerLTW.Position;
-
-                    // Dodajemy przesuniêcie w zale¿noœci od kierunku ruchu (Horizontal/Vertical)
-                    // Wartoœci 1.0f (zgodnie z Twoj¹ proœb¹) koryguj¹ lag klatki
-                    float3 inputOffset = new float3(input.ValueRO.Horizontal, 0, input.ValueRO.Vertical);
-
-                    // Normalizujemy, aby ruch po skosie nie dodawa³ zbyt du¿ej poprawki
-                    if (math.lengthsq(inputOffset) > 0.001f)
-                    {
-                        // Poprawka: mno¿ymy przez ok 0.1-0.2 (poniewa¿ 1.0 to bardzo du¿o w ECS na klatkê)
-                        // Jeœli pocisk jest wci¹¿ za Tob¹, zwiêksz tê wartoœæ.
-                        spawnPos += math.normalize(inputOffset) * 0.6f;
-                    }
-
-                    Entity projectile = ecb.Instantiate(prefab.Value);
-
-                    int ownerNetId = -1;
-                    if (networkIdLookup.TryGetComponent(playerEntity, out var netId))
-                        ownerNetId = netId.Value;
-
-                    ecb.SetComponent(projectile, new GhostOwner { NetworkId = ownerNetId });
-
-                    float3 direction = input.ValueRO.AimDirection;
-                    if (math.all(direction == 0)) direction = new float3(0, 0, 1);
-                    var rotation = quaternion.LookRotationSafe(direction, math.up());
-
-                    // DZIEDZICZENIE PÊDU (Velocity gracza)
-                    float3 playerVel = float3.zero;
-                    if (velocityLookup.TryGetComponent(playerEntity, out var pVel))
-                        playerVel = pVel.Linear;
-
-                    float prefabScale = ltLookup.HasComponent(prefab.Value) ? ltLookup[prefab.Value].Scale : 1.0f;
-
-                    ecb.SetComponent(projectile, LocalTransform.FromPositionRotationScale(spawnPos, rotation, prefabScale));
-
-                    ecb.SetComponent(projectile, new ProjectileComponent
-                    {
-                        Damage = weapon.damage,
-                        Velocity = (direction * weapon.projectileSpeed) /*+ playerVel * 0.3f*/,
-                        DeathTime = currentTime + 3.0,
-                        Owner = playerEntity
-                    });
-                    
+                    SystemAPI.SetComponent(weaponEntity, weaponData);
+                    SystemAPI.SetComponent(weaponEntity, workState);
+                }
+                else
+                {
+                    // Jeœli wci¹¿ siê prze³adowuje, nie pozwól strzelaæ
+                    continue;
                 }
             }
 
-            // Logika reloadu
-            if (weapon.currentAmmo <= 0 && !wState.IsReloading && weapon.maxAmmo > 0)
+            // --- LOGIKA STRZA£U ---
+            if (input.ValueRO.leftMouseButton == 1 &&
+                currentTime >= workState.NextShotTime &&
+                weaponData.currentAmmo > 0)
             {
-                wState.IsReloading = true;
-                wState.ReloadTimer = (float)currentTime + weapon.reloadTime;
-                weaponStateLookup[wEntity] = wState;
+                workState.NextShotTime = (float)currentTime + weaponData.fireRate;
+                weaponData.currentAmmo -= 1;
+
+                SystemAPI.SetComponent(weaponEntity, workState);
+                SystemAPI.SetComponent(weaponEntity, weaponData);
+
+               
+
+                Entity projectile = ecb.Instantiate(projectilePrefab.Value);
+
+                LocalTransform spawnerTransform = SystemAPI.GetComponent<LocalTransform>(playerEntity);
+
+                // 1. Pobieramy rotacjê (np. gracza)
+                quaternion spawnRotation = spawnerTransform.Rotation;
+
+                // 2. Pobieramy offset lokalny (np. zdefiniowany w ScriptableObject jako 0, 1, 1)
+                float3 localOffset = weaponData.ProjectileSpawner;
+
+                // 3. Mno¿ymy rotacjê przez offset (USUÑ DODAWANIE weaponData tutaj)
+                // math.mul obraca Twój lokalny wektor tak, by pasowa³ do kierunku, w którym patrzy gracz
+                float3 worldOffset = math.mul(spawnRotation, localOffset);
+
+                // 4. Dodajemy obrócony offset do pozycji startowej
+                float3 spawnPos = spawnerTransform.Position + worldOffset;
+
+
+                ecb.SetComponent(projectile, LocalTransform.FromPositionRotationScale(
+                    spawnPos,
+                    quaternion.identity,
+                    0.1f
+                ));
+
+
+
+                float3 playerVelocity = float3.zero;
+                if (SystemAPI.HasComponent<PhysicsVelocity>(playerEntity))
+                {
+                    playerVelocity = SystemAPI.GetComponent<PhysicsVelocity>(playerEntity).Linear;
+                }
+
+                // Obliczamy prêdkoœæ bazow¹ pocisku
+                float3 projectileBaseVelocity = input.ValueRO.AimDirection * weaponData.projectileSpeed;
+
+                // Finalna prêdkoœæ to suma obu wektorów
+                float3 finalVelocity = projectileBaseVelocity + playerVelocity;
+
+
+                ecb.SetComponent(projectile, new ProjectileComponent
+                {
+                    Velocity = finalVelocity,
+                    DeathTime = currentTime + 3f,
+                    Owner = playerEntity,
+                    Damage = weaponData.damage
+                });
             }
         }
     }

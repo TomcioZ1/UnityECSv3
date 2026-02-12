@@ -16,6 +16,7 @@ public struct MyPlayerInput : IInputComponentData
     public int Vertical;
     public byte leftMouseButton;
     public byte rightMouseButton;
+    public byte reloadRequested;
     public float3 MouseWorldPos;
     public float3 AimDirection;
     public byte choosenWeapon;
@@ -74,6 +75,7 @@ public partial struct MyPlayerInputSystem : ISystem
         var down = keyboard.sKey.isPressed;
         var up = keyboard.wKey.isPressed;
         var leftMouse = mouse.leftButton.isPressed;
+        var rkeypressed = keyboard.rKey.isPressed;
 
         var weapon1 = keyboard.digit1Key.isPressed;
         var weapon2 = keyboard.digit2Key.isPressed;
@@ -86,6 +88,7 @@ public partial struct MyPlayerInputSystem : ISystem
         foreach (var playerInput in SystemAPI.Query<RefRW<MyPlayerInput>>().WithAll<GhostOwnerIsLocal>())
         {
             playerInput.ValueRW.leftMouseButton = leftMouse ? (byte)1 : (byte)0;
+            playerInput.ValueRW.reloadRequested = rkeypressed ? (byte)1 : (byte)0;
             if (choosenWeapon != 0) playerInput.ValueRW.choosenWeapon = choosenWeapon;
 
             int h = 0;

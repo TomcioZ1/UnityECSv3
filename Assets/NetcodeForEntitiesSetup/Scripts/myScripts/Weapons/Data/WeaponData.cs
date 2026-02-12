@@ -1,14 +1,8 @@
 using Unity.Entities;
+using Unity.Mathematics;
 using Unity.NetCode;
 
-// Komponent na postaci
-[GhostComponent] // <--- DODAJ TO
-/*public struct ActiveWeapon : IComponentData
-{
-    [GhostField] public Entity WeaponEntity;
-    public Entity PreviousWeaponEntity;
-    [GhostField] public byte SelectedWeaponId;
-}*/
+
 
 
 public struct PlayerInventory : IComponentData
@@ -35,7 +29,7 @@ public struct WeaponOwner : IComponentData
 [GhostComponent]
 public struct WeaponData : IComponentData
 {
-    [GhostField] public Entity ProjectileSpawner;
+    [GhostField] public float3 ProjectileSpawner;
 
     [GhostField] public int magSize;
     [GhostField] public int currentAmmo;

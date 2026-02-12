@@ -133,6 +133,11 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             AddConnectionUISystemToUpdateList();
         }
 
+
+
+
+
+
         void StartClient()
         {
             Debug.Log("Start client");
@@ -263,6 +268,22 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                 UIBehaviour.ConnectionStatus = $"{address} | Connecting...";
             }
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     }
 }
