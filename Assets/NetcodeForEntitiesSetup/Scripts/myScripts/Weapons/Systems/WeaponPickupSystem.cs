@@ -4,22 +4,25 @@ using Unity.Entities;
 using Unity.Physics;
 using Unity.Physics.Systems;
 using Unity.NetCode;
+using UnityEngine;
 
 [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
-[BurstCompile]
 public partial struct WeaponPickupSystem : ISystem
 {
     private ComponentLookup<WeaponPickup> pickupLookup;
     private ComponentLookup<PlayerInventory> inventoryLookup;
+    private ComponentLookup<GhostInstance> ghostInstanceLookup;
 
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
         pickupLookup = state.GetComponentLookup<WeaponPickup>(true);
         inventoryLookup = state.GetComponentLookup<PlayerInventory>(false);
+        ghostInstanceLookup = state.GetComponentLookup<GhostInstance>(true);
 
         state.RequireForUpdate<SimulationSingleton>();
+        state.RequireForUpdate<DestroyedGhostElement>();
     }
 
     [BurstCompile]
@@ -28,15 +31,22 @@ public partial struct WeaponPickupSystem : ISystem
         var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
 
+        if (!SystemAPI.TryGetSingletonEntity<DestroyedGhostElement>(out Entity bufferEntity))
+            return;
+
+        var destroyedBuffer = SystemAPI.GetBuffer<DestroyedGhostElement>(bufferEntity);
+
         pickupLookup.Update(ref state);
         inventoryLookup.Update(ref state);
+        ghostInstanceLookup.Update(ref state);
 
-        // Uruchamiamy Job fizyki
         var job = new PickupTriggerJob
         {
             PickupLookup = pickupLookup,
             InventoryLookup = inventoryLookup,
-            ECB = ecb
+            GhostInstanceLookup = ghostInstanceLookup,
+            ECB = ecb,
+            DestroyedBuffer = destroyedBuffer
         };
 
         state.Dependency = job.Schedule(SystemAPI.GetSingleton<SimulationSingleton>(), state.Dependency);
@@ -46,26 +56,21 @@ public partial struct WeaponPickupSystem : ISystem
     struct PickupTriggerJob : ITriggerEventsJob
     {
         [ReadOnly] public ComponentLookup<WeaponPickup> PickupLookup;
+        [ReadOnly] public ComponentLookup<GhostInstance> GhostInstanceLookup;
         public ComponentLookup<PlayerInventory> InventoryLookup;
+
         public EntityCommandBuffer ECB;
+        public DynamicBuffer<DestroyedGhostElement> DestroyedBuffer;
 
         public void Execute(TriggerEvent triggerEvent)
         {
             Entity entityA = triggerEvent.EntityA;
             Entity entityB = triggerEvent.EntityB;
 
-            // Sprawdzamy, która encja to gracz, a która to pickup
-            bool isPlayerA = InventoryLookup.HasComponent(entityA);
-            bool isPickupB = PickupLookup.HasComponent(entityB);
-
-            if (isPlayerA && isPickupB)
-            {
+            if (InventoryLookup.HasComponent(entityA) && PickupLookup.HasComponent(entityB))
                 ProcessPickup(entityA, entityB);
-            }
             else if (InventoryLookup.HasComponent(entityB) && PickupLookup.HasComponent(entityA))
-            {
                 ProcessPickup(entityB, entityA);
-            }
         }
 
         private void ProcessPickup(Entity player, Entity pickupEntity)
@@ -74,33 +79,16 @@ public partial struct WeaponPickupSystem : ISystem
             var pickup = PickupLookup[pickupEntity];
             bool pickedUp = false;
 
-            // Logika slotów (identyczna jak u Ciebie)
-            if (pickup.WeaponId >= 10) // Granaty
-            {
-                inventory.Slot4_GrenadeId = pickup.WeaponId;
-                inventory.ActiveSlotIndex = 4;
-                pickedUp = true;
-            }
-            else
-            {
-                if (inventory.Slot1_WeaponId == 0)
-                {
-                    inventory.Slot1_WeaponId = pickup.WeaponId;
-                    inventory.ActiveSlotIndex = 1;
-                    pickedUp = true;
-                }
-                else if (inventory.Slot2_WeaponId == 0)
-                {
-                    inventory.Slot2_WeaponId = pickup.WeaponId;
-                    inventory.ActiveSlotIndex = 2;
-                    pickedUp = true;
-                }
-            }
+            // Logika podnoszenia (uproszczona dla czytelnoœci)
+            if (pickup.WeaponId >= 10) { inventory.Slot4_GrenadeId = pickup.WeaponId; pickedUp = true; }
+            else if (inventory.Slot1_WeaponId == 0) { inventory.Slot1_WeaponId = pickup.WeaponId; pickedUp = true; }
+            else if (inventory.Slot2_WeaponId == 0) { inventory.Slot2_WeaponId = pickup.WeaponId; pickedUp = true; }
 
             if (pickedUp)
             {
                 InventoryLookup[player] = inventory;
-                ECB.DestroyEntity(pickupEntity); // Usuwamy pickup
+
+                ECB.DestroyEntity(pickupEntity);
             }
         }
     }

@@ -24,3 +24,25 @@ public struct ProjectileComponentNoScary : IComponentData
     public Entity Owner;
  
 }
+
+[GhostComponent]
+public struct ShotEvent : IComponentData
+{
+    [GhostField] public int ShotCount;      // Zwiêkszamy przy ka¿dym strzale
+    [GhostField] public float3 Direction;   // Kierunek strza³u
+    [GhostField] public float3 TargetPos;   // Gdzie raycast trafi³ (punkt koñcowy)
+}
+
+// Pomocniczy komponent na prefabie gracza, ¿eby system wiedzia³, gdzie jest lufa
+public struct MuzzleOffset : IComponentData
+{
+    public float3 Value;
+}
+
+// Lokalny (nie-sieciowy) komponent dla wizualnego pocisku
+public struct VisualProjectile : IComponentData
+{
+    public float3 Velocity;
+    public float3 TargetPos;
+    public float DeathTime;
+}

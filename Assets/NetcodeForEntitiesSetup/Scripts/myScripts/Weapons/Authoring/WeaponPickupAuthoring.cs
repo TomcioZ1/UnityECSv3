@@ -36,7 +36,6 @@ public class WeaponPickupAuthoring : MonoBehaviour
                 Ammo = authoring.AmmoCount
             });
 
-            //AddComponent(entity, new GhostInstance());
 
         }
     }

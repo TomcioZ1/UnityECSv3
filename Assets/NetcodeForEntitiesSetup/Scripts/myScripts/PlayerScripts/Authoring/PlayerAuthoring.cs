@@ -63,7 +63,7 @@ public class PlayerAuthoring : MonoBehaviour
                 distanceBetweenLegs = 0.07f,
                 distanceBetweenSteps = 0.5f
             });
-
+            AddComponent(entity, new ShotEvent { });
 
         }
     }

@@ -1,4 +1,4 @@
-using Unity.Burst;
+/*using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
@@ -81,10 +81,10 @@ public partial struct ProjectileSpawnSystem : ISystem
                 weaponData.currentAmmo > 0)
             {
 
-                /*if(input.ValueRO.SpawnBulletTime >= currentTime)
+                *//*if(input.ValueRO.SpawnBulletTime >= currentTime)
                 {
                     continue;
-                }*/
+                }*//*
 
 
                 workState.NextShotTime = (float)currentTime + weaponData.fireRate;
@@ -141,4 +141,4 @@ public partial struct ProjectileSpawnSystem : ISystem
             }
         }
     }
-}
+}*/

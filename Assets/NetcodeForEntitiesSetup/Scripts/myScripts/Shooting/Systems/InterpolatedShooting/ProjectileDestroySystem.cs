@@ -1,4 +1,4 @@
-using Unity.Burst;
+/*using Unity.Burst;
 using Unity.Entities;
 using Unity.NetCode;
 
@@ -39,4 +39,4 @@ public partial struct ProjectileDestroySystem : ISystem
             }
         }
     }
-}
+}*/

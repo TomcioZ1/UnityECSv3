@@ -1,4 +1,4 @@
-using Unity.Burst;
+/*using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
@@ -77,4 +77,4 @@ public partial struct ProjectileSimulationSystem : ISystem
             }
         }
     }
-}
+}*/

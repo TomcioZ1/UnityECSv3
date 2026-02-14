@@ -20,7 +20,6 @@ public struct MyPlayerInput : IInputComponentData
     public float3 MouseWorldPos;
     public float3 AimDirection;
     public byte choosenWeapon;
-    public float SpawnBulletTime;
 }
 
 [DisallowMultipleComponent]
@@ -44,7 +43,6 @@ public partial struct MyPlayerInputSystem : ISystem
     {
         // 1. Sprawdü czy to na pewno úwiat klienta (dodatkowe zabezpieczenie)
         if (!state.WorldUnmanaged.IsClient()) return;
-        if (!SystemAPI.TryGetSingleton<LeftButtonBefore>(out var leftButtonBefore)) return;
 
 
         // 2. Pobierz urzπdzenia bezpiecznie
@@ -112,7 +110,6 @@ public partial struct MyPlayerInputSystem : ISystem
             playerInput.ValueRW.Vertical = v;
             if (hasValidMousePos) playerInput.ValueRW.MouseWorldPos = worldMousePos;
 
-            leftButtonBefore.wasHeld = leftMouse;
 
         }
     }

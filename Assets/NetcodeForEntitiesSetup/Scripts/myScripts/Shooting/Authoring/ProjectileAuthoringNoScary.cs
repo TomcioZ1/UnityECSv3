@@ -8,7 +8,7 @@ class ProjectileAuthoringNoScary : MonoBehaviour
         public override void Bake(ProjectileAuthoringNoScary authoring)
         {
             var entity = GetEntity(TransformUsageFlags.Dynamic);
-            AddComponent(entity, new ProjectileComponentNoScary());
+            AddComponent(entity, new VisualProjectile());
         }
     }
 }

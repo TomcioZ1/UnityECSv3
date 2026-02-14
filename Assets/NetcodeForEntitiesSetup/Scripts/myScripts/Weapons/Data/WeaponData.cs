@@ -30,7 +30,6 @@ public struct WeaponOwner : IComponentData
 public struct WeaponData : IComponentData
 {
     [GhostField] public float3 ProjectileSpawner;
-
     [GhostField] public int magSize;
     [GhostField] public int currentAmmo;
     [GhostField] public int maxAmmo;
