@@ -3,13 +3,13 @@ using UnityEngine;
 
 public class ProjectilePrefabAuthoring : MonoBehaviour
 {
-    public GameObject Prefab;
+    public GameObject ProjectilePrefab;
     class Baker : Baker<ProjectilePrefabAuthoring>
     {
         public override void Bake(ProjectilePrefabAuthoring auth)
         {
             var entity = GetEntity(TransformUsageFlags.None);
-            AddComponent(entity, new ProjectilePrefab { Value = GetEntity(auth.Prefab, TransformUsageFlags.Dynamic) });
+            AddComponent(entity, new ProjectilePrefab { Value = GetEntity(auth.ProjectilePrefab, TransformUsageFlags.Dynamic) });
         }
     }
 }

@@ -3,5 +3,5 @@ using Unity.Entities;
 public struct PerformanceStats : IComponentData
 {
     public float FPS;
-    public int Ping;
+    public float Ping;
 }

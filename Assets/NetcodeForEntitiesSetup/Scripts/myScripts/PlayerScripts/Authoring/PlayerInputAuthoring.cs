@@ -20,6 +20,7 @@ public struct MyPlayerInput : IInputComponentData
     public float3 MouseWorldPos;
     public float3 AimDirection;
     public byte choosenWeapon;
+    public float SpawnBulletTime;
 }
 
 [DisallowMultipleComponent]
@@ -36,13 +37,15 @@ public class PlayerInputAuthoring : MonoBehaviour
 }
 
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation | WorldSystemFilterFlags.ThinClientSimulation)]
-[UpdateInGroup(typeof(GhostInputSystemGroup))]
+//[UpdateInGroup(typeof(GhostInputSystemGroup))]
 public partial struct MyPlayerInputSystem : ISystem
 {
     public void OnUpdate(ref SystemState state)
     {
         // 1. SprawdŸ czy to na pewno œwiat klienta (dodatkowe zabezpieczenie)
         if (!state.WorldUnmanaged.IsClient()) return;
+        if (!SystemAPI.TryGetSingleton<LeftButtonBefore>(out var leftButtonBefore)) return;
+
 
         // 2. Pobierz urz¹dzenia bezpiecznie
         var keyboard = Keyboard.current;
@@ -50,6 +53,7 @@ public partial struct MyPlayerInputSystem : ISystem
 
         if (keyboard == null || mouse == null)
             return;
+        
 
         float3 worldMousePos = float3.zero;
         bool hasValidMousePos = false;
@@ -83,10 +87,16 @@ public partial struct MyPlayerInputSystem : ISystem
         var weapon4 = keyboard.digit4Key.isPressed;
 
         byte choosenWeapon = weapon1 ? (byte)1 : weapon2 ? (byte)2 : weapon3 ? (byte)3 : weapon4 ? (byte)4 : (byte)0;
+        
 
         // 5. Query - u¿ywamy GhostOwnerIsLocal, aby wype³niæ input tylko dla naszego gracza
         foreach (var playerInput in SystemAPI.Query<RefRW<MyPlayerInput>>().WithAll<GhostOwnerIsLocal>())
         {
+           /* if(playerInput.ValueRO.leftMouseButton == 0 && leftMouse) 
+            {
+                playerInput.ValueRW.SpawnBulletTime = (float)SystemAPI.Time.ElapsedTime + 0.05f;
+            }*/
+
             playerInput.ValueRW.leftMouseButton = leftMouse ? (byte)1 : (byte)0;
             playerInput.ValueRW.reloadRequested = rkeypressed ? (byte)1 : (byte)0;
             if (choosenWeapon != 0) playerInput.ValueRW.choosenWeapon = choosenWeapon;
@@ -100,8 +110,10 @@ public partial struct MyPlayerInputSystem : ISystem
             if (down) v -= 1;
             if (up) v += 1;
             playerInput.ValueRW.Vertical = v;
-
             if (hasValidMousePos) playerInput.ValueRW.MouseWorldPos = worldMousePos;
+
+            leftButtonBefore.wasHeld = leftMouse;
+
         }
     }
 }
@@ -109,7 +121,8 @@ public partial struct MyPlayerInputSystem : ISystem
 
 
 //[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
-[UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
+[UpdateInGroup(typeof(PredictedFixedStepSimulationSystemGroup))]
+[UpdateAfter(typeof(PhysicsSystemGroup))]
 [BurstCompile]
 public partial struct MyPlayerMovementSystem : ISystem
 {
@@ -118,12 +131,15 @@ public partial struct MyPlayerMovementSystem : ISystem
     {
         
         var moveSpeed = 4f;
+        //state.Dependency.Complete();
 
-        // Na serwerze i kliencie wykonujemy tê sam¹ logikê ruchu dla synchronizacji
+        // Na serwerze i kliencie wykonujemy tê sam¹ logikê ruchu dla syncShronizacji
         foreach (var (input, velocity, trans) in
                  SystemAPI.Query<RefRO<MyPlayerInput>, RefRW<PhysicsVelocity>, RefRW<LocalTransform>>()
                  .WithAll<Simulate>())
         {
+            if (input.ValueRO.leftMouseButton == 1) moveSpeed = 2f;
+
             // --- 1. RUCH LINIOWY ---
             float2 moveInput = new float2(input.ValueRO.Horizontal, input.ValueRO.Vertical);
             float3 newLinearVelocity = float3.zero;
@@ -152,4 +168,11 @@ public partial struct MyPlayerMovementSystem : ISystem
             velocity.ValueRW.Angular = float3.zero;
         }
     }
+}
+
+
+
+public struct  LeftButtonBefore : IComponentData
+{
+    public bool wasHeld;
 }

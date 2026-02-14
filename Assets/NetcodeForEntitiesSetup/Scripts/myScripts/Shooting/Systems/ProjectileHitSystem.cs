@@ -14,6 +14,8 @@ public partial struct ProjectileSimulationSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         state.Dependency.Complete();
+        var networkTime = SystemAPI.GetSingleton<NetworkTime>();
+        if (!networkTime.IsFirstTimeFullyPredictingTick) return;
 
         var collisionWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().CollisionWorld;
         var healthLookup = SystemAPI.GetComponentLookup<HealthComponent>(false);
@@ -24,11 +26,13 @@ public partial struct ProjectileSimulationSystem : ISystem
                  SystemAPI.Query<RefRW<ProjectileComponent>, RefRW<LocalTransform>>()
                  .WithAll<Simulate>())
         {
+
             // Pomiñ pociski, które ju¿ powinny znikn¹æ
             if (proj.ValueRO.DeathTime <= currentTime) continue;
 
             float3 start = transform.ValueRO.Position;
             float3 end = start + (proj.ValueRO.Velocity * dt);
+
 
             var rayInput = new RaycastInput
             {
@@ -42,6 +46,8 @@ public partial struct ProjectileSimulationSystem : ISystem
                 }
             };
 
+            //if (currentTime - proj.ValueRO.SpawnTime < proj.ValueRO.TimeOffset) continue;
+
             if (collisionWorld.CastRay(rayInput, out var hit))
             {
                 if (hit.Entity == proj.ValueRO.Owner)
@@ -49,6 +55,7 @@ public partial struct ProjectileSimulationSystem : ISystem
                     transform.ValueRW.Position = end;
                     continue;
                 }
+
 
                 // TRAFIENIE
                 transform.ValueRW.Position = hit.Position;

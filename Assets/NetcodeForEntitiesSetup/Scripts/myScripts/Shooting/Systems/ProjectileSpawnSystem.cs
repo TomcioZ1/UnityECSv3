@@ -3,8 +3,10 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Physics;
+using UnityEngine;
 using Unity.Transforms;
-
+// Zeby zrobic predicted usunac server simulation filter, dodac predicted tick, zmienic w predicted na ghoscie
+[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [UpdateInGroup(typeof(PredictedFixedStepSimulationSystemGroup))]
 [BurstCompile]
 public partial struct ProjectileSpawnSystem : ISystem
@@ -14,6 +16,8 @@ public partial struct ProjectileSpawnSystem : ISystem
     {
         if (!SystemAPI.TryGetSingleton<ProjectilePrefab>(out var projectilePrefab)) return;
         var networkTime = SystemAPI.GetSingleton<NetworkTime>();
+        SystemAPI.TryGetSingleton<PerformanceStats>(out var pingStats);
+
 
         if (!networkTime.IsFirstTimeFullyPredictingTick)
             return;
@@ -28,6 +32,10 @@ public partial struct ProjectileSpawnSystem : ISystem
                  .WithAll<Simulate>()
                  .WithEntityAccess())
         {
+            if (!SystemAPI.TryGetSingleton<BulletSpawnTimer>(out var bulletSpawnTimer)) return; // AAAAAAAAAAAA
+
+
+
             Entity weaponEntity = inventory.ValueRO.CurrentWeaponEntity;
 
             if (weaponEntity == Entity.Null ||
@@ -72,60 +80,64 @@ public partial struct ProjectileSpawnSystem : ISystem
                 currentTime >= workState.NextShotTime &&
                 weaponData.currentAmmo > 0)
             {
+
+                /*if(input.ValueRO.SpawnBulletTime >= currentTime)
+                {
+                    continue;
+                }*/
+
+
                 workState.NextShotTime = (float)currentTime + weaponData.fireRate;
                 weaponData.currentAmmo -= 1;
 
                 SystemAPI.SetComponent(weaponEntity, workState);
                 SystemAPI.SetComponent(weaponEntity, weaponData);
 
-               
-
-                Entity projectile = ecb.Instantiate(projectilePrefab.Value);
-
-                LocalTransform spawnerTransform = SystemAPI.GetComponent<LocalTransform>(playerEntity);
-
-                // 1. Pobieramy rotacjê (np. gracza)
-                quaternion spawnRotation = spawnerTransform.Rotation;
-
-                // 2. Pobieramy offset lokalny (np. zdefiniowany w ScriptableObject jako 0, 1, 1)
-                float3 localOffset = weaponData.ProjectileSpawner;
-
-                // 3. Mno¿ymy rotacjê przez offset (USUÑ DODAWANIE weaponData tutaj)
-                // math.mul obraca Twój lokalny wektor tak, by pasowa³ do kierunku, w którym patrzy gracz
-                float3 worldOffset = math.mul(spawnRotation, localOffset);
-
-                // 4. Dodajemy obrócony offset do pozycji startowej
-                float3 spawnPos = spawnerTransform.Position + worldOffset;
 
 
-                ecb.SetComponent(projectile, LocalTransform.FromPositionRotationScale(
-                    spawnPos,
-                    quaternion.identity,
-                    0.1f
-                ));
+                // 1. Podstawowa rotacja i offset lufy
+                quaternion spawnRotation = playerTransform.ValueRO.Rotation;
+                float3 worldOffset = math.mul(spawnRotation, weaponData.ProjectileSpawner);
 
-
-
+                // 2. Pobranie aktualnej prêdkoœci gracza
                 float3 playerVelocity = float3.zero;
                 if (SystemAPI.HasComponent<PhysicsVelocity>(playerEntity))
                 {
                     playerVelocity = SystemAPI.GetComponent<PhysicsVelocity>(playerEntity).Linear;
                 }
 
-                // Obliczamy prêdkoœæ bazow¹ pocisku
-                float3 projectileBaseVelocity = input.ValueRO.AimDirection * weaponData.projectileSpeed;
+                // 3. KOMPENSACJA RUCHU:
+                // Przesuwamy punkt spawnu o dystans, który gracz pokona³ w trakcie podró¿y pakietu (RTT)
+                // Pomaga to "dogoniæ" pozycjê gracza, któr¹ widzia³ u siebie na ekranie
+                float3 movementCompensation = math.normalize(playerVelocity) * (0.2f);
+                //Debug.Log($"Ping: {pingStats.Ping} ms, Player Velocity: {playerVelocity}, Movement Compensation: {movementCompensation}");
+                float3 spawnPos = playerTransform.ValueRO.Position + worldOffset + movementCompensation;
 
-                // Finalna prêdkoœæ to suma obu wektorów
+
+                // 4. Instancjonowanie
+                Entity projectile = ecb.Instantiate(projectilePrefab.Value);
+
+                // 5. Ustawienie transformacji
+                ecb.SetComponent(projectile, LocalTransform.FromPositionRotationScale(
+                    spawnPos,
+                    spawnRotation,
+                    1f
+                ));
+
+                // 6. Obliczenie prêdkoœci pocisku (prêdkoœæ wylotowa + wp³yw ruchu gracza)
+                float3 projectileBaseVelocity = input.ValueRO.AimDirection * weaponData.projectileSpeed;
                 float3 finalVelocity = projectileBaseVelocity + playerVelocity;
 
-
+                // 7. Inicjalizacja danych pocisku
                 ecb.SetComponent(projectile, new ProjectileComponent
                 {
                     Velocity = finalVelocity,
+                    SpawnTime = currentTime,
                     DeathTime = currentTime + 3f,
                     Owner = playerEntity,
-                    Damage = weaponData.damage
+                    Damage = weaponData.damage,
                 });
+
             }
         }
     }

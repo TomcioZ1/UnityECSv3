@@ -54,7 +54,15 @@ public class PlayerAuthoring : MonoBehaviour
             AddComponent(entity, new BaseScale { Value = authoring.transform.localScale });
 
 
-            // Interpolacja
+            // footprint
+            AddComponent(entity, new PlayerFootprintState
+            {
+                LastSpawnPosition = float3.zero,
+                LeftFoot = false,
+                IsInitialized = false,
+                distanceBetweenLegs = 0.07f,
+                distanceBetweenSteps = 0.5f
+            });
 
 
         }

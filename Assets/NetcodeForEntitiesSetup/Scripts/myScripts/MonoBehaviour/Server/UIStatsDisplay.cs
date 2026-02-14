@@ -54,7 +54,7 @@ public class UIStatsDisplay : MonoBehaviour
                 fpsText.text = $"FPS: {Mathf.RoundToInt(stats.FPS)}";
 
             if (pingText != null)
-                pingText.text = $"Ping: {stats.Ping}ms";
+                pingText.text = $"Ping: {Mathf.RoundToInt(stats.Ping)}";
 
             // Debug.Log("UI Updated"); // Mo¿esz odkomentowaæ, by sprawdziæ w konsoli jak rzadko siê pojawia
         }

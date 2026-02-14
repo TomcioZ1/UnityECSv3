@@ -2,9 +2,11 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
 using UnityEngine;
+using Unity.Burst;
 
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
-// [BurstCompile] // Komentujemy Burst, aby Debug.Log zadzia³a³ w konsoli
+//[UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
+[BurstCompile] // Komentujemy Burst, aby Debug.Log zadzia³a³ w konsoli
 public partial struct PerformanceMonitorSystem : ISystem
 {
     public void OnUpdate(ref SystemState state)
@@ -20,12 +22,9 @@ public partial struct PerformanceMonitorSystem : ISystem
             // Pobieranie Pingu
             if (SystemAPI.TryGetSingleton<NetworkSnapshotAck>(out var networkAck))
             {
-                stats.ValueRW.Ping = (int)networkAck.EstimatedRTT;
+                stats.ValueRW.Ping = networkAck.EstimatedRTT;
             }
-            else
-            {
-                stats.ValueRW.Ping = 0;
-            }
+            
 
             // DEBUG LOG - Wyœwietli siê w konsoli Unity
             // Zaokr¹glamy FPS do 1 miejsca po przecinku dla czytelnoœci

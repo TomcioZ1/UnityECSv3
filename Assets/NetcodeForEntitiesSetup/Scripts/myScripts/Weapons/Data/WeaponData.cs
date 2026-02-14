@@ -38,6 +38,7 @@ public struct WeaponData : IComponentData
     [GhostField] public float reloadTime;
     [GhostField] public float projectileSpeed;
     [GhostField] public int damage;
+    //[GhostField] public float ShootTime;
 
 }
 

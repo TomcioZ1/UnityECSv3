@@ -173,11 +173,11 @@ MonoBehaviour:
   m_ShapeType: 0
   m_PrimitiveCenter:
     x: 1.55
-    y: -1.06
+    y: -1.42
     z: 1.31
   m_PrimitiveSize:
     x: 4.82
-    y: 3.7443728
+    y: 3.84
     z: 4.18
   m_PrimitiveOrientation:
     Value:

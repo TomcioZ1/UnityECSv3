@@ -1,35 +1,33 @@
-/*using Unity.Burst;
-using Unity.Entities;
-using Unity.Mathematics;
+/*using Unity.Entities;
 using Unity.NetCode;
-using Unity.Transforms;
+using Unity.Rendering;
+using UnityEngine;
 
 [UpdateInGroup(typeof(PredictedFixedStepSimulationSystemGroup))]
-[BurstCompile]
-public partial struct ProjectileMoveSystem : ISystem
+public partial struct ProjectileVisualSystem : ISystem
 {
-    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        // W Netcode for Entities, dla systemów predykcji, 
-        // DeltaTime automatycznie zwraca czas trwania jednego Ticku sieciowego.
-        var dt = SystemAPI.Time.DeltaTime;
+        var networkTime = SystemAPI.GetSingleton<NetworkTime>();
+        if (!networkTime.IsFirstTimeFullyPredictingTick) return;
 
-        // Kluczowe: Pobieramy NetworkTime, aby wiedzieæ, czy symulujemy, czy tylko interpolujemy
-        if (!SystemAPI.TryGetSingleton<NetworkTime>(out var networkTime)) return;
+        var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
+            .CreateCommandBuffer(state.WorldUnmanaged);
 
-        // Query z Simulate zapewnia, ¿e:
-        // 1. Serwer porusza wszystkimi pociskami.
-        // 2. Klient porusza tylko swoimi (Predicted) lub tymi, które serwer kaza³ mu symulowaæ.
-        foreach (var (projectile, transform) in
-                 SystemAPI.Query<RefRO<ProjectileComponent>, RefRW<LocalTransform>>()
-                 .WithAll<Simulate>())
+        // U¿ywamy czasu systemowego
+        double time = SystemAPI.Time.ElapsedTime;
+
+        foreach (var (projectile, entity) in
+                 SystemAPI.Query<RefRO<ProjectileComponent>>()
+                 .WithAll<DisableRendering>()
+                 .WithEntityAccess())
         {
-            // PROSTA LOGIKA RUCHU
-            transform.ValueRW.Position += projectile.ValueRO.Velocity * dt;
-
-            // OPCJONALNIE: Mo¿esz tu dodaæ automatyczne niszczenie po czasie, 
-            // u¿ywaj¹c projectile.ValueRO.DeathTime i SystemAPI.Time.ElapsedTime
+            // WARUNEK: Usuñ tag TYLKO jeœli min¹³ offset
+            if (time - projectile.ValueRO.SpawnTime > projectile.ValueRO.TimeOffset)
+            {
+                ecb.RemoveComponent<DisableRendering>(entity);
+                //Debug.Log($"[KLIENT] Pokazujê pocisk {entity.Index}. Offset: {projectile.ValueRO.TimeOffset}");
+            }
         }
     }
 }*/

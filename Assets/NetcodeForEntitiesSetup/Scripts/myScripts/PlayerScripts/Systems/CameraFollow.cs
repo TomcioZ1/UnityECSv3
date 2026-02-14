@@ -4,10 +4,8 @@ using Unity.Mathematics;
 using Unity.NetCode;
 using UnityEngine;
 
-// U¿ywamy standardowej grupy transformacji
-[UpdateInGroup(typeof(TransformSystemGroup))]
-// Kluczowe: czekamy, a¿ LocalToWorld zostanie obliczone dla tej klatki
-[UpdateAfter(typeof(LocalToWorldSystem))]
+[UpdateInGroup(typeof(PresentationSystemGroup))]
+[UpdateAfter(typeof(TransformSystemGroup))]
 public partial class CameraFollowSystem : SystemBase
 {
     private CameraTargetProxy _cachedProxy;
@@ -20,26 +18,40 @@ public partial class CameraFollowSystem : SystemBase
             if (_cachedProxy == null) return;
         }
 
-        // Reszta kodu pozostaje bez zmian
+        // Pobieramy dane gracza. Jeœli gracz ma IsDestroyedTag, pêtla siê nie wykona.
+        // U¿ywamy SystemAPI.Query, co jest standardem w Unity 6.
         foreach (var (ltw, localTag) in SystemAPI.Query<RefRO<LocalToWorld>, EnabledRefRO<GhostOwnerIsLocal>>()
-                     .WithAll<PlayerTag>())
+                     .WithAll<PlayerTag>()
+                     .WithNone<IsDestroyedTag>())
         {
             float3 playerPos = ltw.ValueRO.Position;
             float3 targetPos = playerPos + (float3)_cachedProxy.Offset;
-
             Transform camTransform = _cachedProxy.transform;
-            float dt = SystemAPI.Time.DeltaTime;
-
-            // Wyg³adzanie wyk³adnicze (Exponential Decay)
-            // Im wy¿szy Smoothness, tym szybciej kamera reaguje
-            float smoothingStrength = 1.0f - math.exp(-_cachedProxy.Smoothness * dt);
 
             float3 currentPos = camTransform.position;
-            float3 newPos = math.lerp(currentPos, targetPos, smoothingStrength);
+            float dt = SystemAPI.Time.DeltaTime;
 
-            camTransform.position = newPos;
+            // --- ZABEZPIECZENIE PRZED DRGANIEM I RESPAWNEM ---
+            float distSq = math.distancesq(currentPos, targetPos);
+
+            // Jeœli dystans jest ogromny (> 15m), to znaczy, ¿e gracz siê zrespawnowa³ 
+            // lub w³aœnie zgin¹³ (teleportacja pod mapê). 
+            // Wtedy robimy natychmiastowy skok pozycji.
+            if (distSq > 225f)
+            {
+                camTransform.position = targetPos;
+            }
+            else
+            {
+                // Wyk³adnicze wyg³adzanie
+                float smoothingStrength = 1.0f - math.exp(-_cachedProxy.Smoothness * dt);
+                camTransform.position = math.lerp(currentPos, targetPos, smoothingStrength);
+            }
+
+            // Sztywne ustawienie rotacji kamery
             camTransform.rotation = Quaternion.Euler(_cachedProxy.PitchAngle, 0, 0);
 
+            // ZnaleŸliœmy naszego gracza, koñczymy
             break;
         }
     }
