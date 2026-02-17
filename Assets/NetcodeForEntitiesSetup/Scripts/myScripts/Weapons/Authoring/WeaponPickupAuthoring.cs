@@ -37,6 +37,17 @@ public class WeaponPickupAuthoring : MonoBehaviour
             });
 
 
+            foreach (Transform child in authoring.transform)
+            {
+                GetEntity(child.gameObject, TransformUsageFlags.Renderable);
+            }
+
+            AddComponent(entity, new GhostState
+            {
+                IsDestroyed = false
+            });
+
+
         }
     }
 }

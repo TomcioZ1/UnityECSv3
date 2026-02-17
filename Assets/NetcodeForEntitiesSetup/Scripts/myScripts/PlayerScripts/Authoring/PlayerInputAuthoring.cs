@@ -117,7 +117,6 @@ public partial struct MyPlayerInputSystem : ISystem
 
 
 
-//[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [UpdateInGroup(typeof(PredictedFixedStepSimulationSystemGroup))]
 [UpdateAfter(typeof(PhysicsSystemGroup))]
 [BurstCompile]
@@ -126,31 +125,46 @@ public partial struct MyPlayerMovementSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        
-        var moveSpeed = 4f;
-        //state.Dependency.Complete();
-
-        // Na serwerze i kliencie wykonujemy tê sam¹ logikê ruchu dla syncShronizacji
-        foreach (var (input, velocity, trans) in
-                 SystemAPI.Query<RefRO<MyPlayerInput>, RefRW<PhysicsVelocity>, RefRW<LocalTransform>>()
+        // Wykonujemy zapytanie o graczy
+        foreach (var (input, inventory, velocity, trans) in
+                 SystemAPI.Query<RefRO<MyPlayerInput>, RefRO<PlayerInventory>, RefRW<PhysicsVelocity>, RefRW<LocalTransform>>()
                  .WithAll<Simulate>())
         {
-            if (input.ValueRO.leftMouseButton == 1) moveSpeed = 2f;
+            float currentMoveSpeed = 4f;
 
-            // --- 1. RUCH LINIOWY ---
+            // 1. Sprawdzamy, czy gracz trzyma rêce czy broñ, 
+            // korzystaj¹c z identycznej logiki co w Twoim WeaponVisibilitySystem
+            byte activeSlot = inventory.ValueRO.ActiveSlotIndex;
+
+            bool isHoldingWeapon = activeSlot switch
+            {
+                1 => inventory.ValueRO.Slot1_WeaponId > 0,
+                2 => inventory.ValueRO.Slot2_WeaponId > 0,
+                4 => inventory.ValueRO.Slot4_GrenadeId > 0,
+                _ => false
+            };
+
+            // 2. Logika spowolnienia:
+            // Jeœli LPM jest wciœniêty ORAZ gracz ma wybran¹ i posiadan¹ broñ (nie rêce)
+            if (input.ValueRO.leftMouseButton == 1 && isHoldingWeapon)
+            {
+                currentMoveSpeed = 2f;
+            }
+
+            // --- 3. RUCH LINIOWY ---
             float2 moveInput = new float2(input.ValueRO.Horizontal, input.ValueRO.Vertical);
             float3 newLinearVelocity = float3.zero;
 
             if (math.lengthsq(moveInput) > 0.001f)
             {
                 float2 normalizedInput = math.normalize(moveInput);
-                newLinearVelocity = new float3(normalizedInput.x * moveSpeed, 0, normalizedInput.y * moveSpeed);
+                newLinearVelocity = new float3(normalizedInput.x * currentMoveSpeed, 0, normalizedInput.y * currentMoveSpeed);
             }
 
+            // Aplikujemy prêdkoœæ, zachowuj¹c istniej¹c¹ prêdkoœæ pionow¹ (grawitacja)
             velocity.ValueRW.Linear = new float3(newLinearVelocity.x, velocity.ValueRO.Linear.y, newLinearVelocity.z);
 
-            // --- 2. ROTACJA ---
-            // Serwer u¿ywa przes³anego w MyPlayerInput pola MouseWorldPos
+            // --- 4. ROTACJA ---
             float3 targetPoint = input.ValueRO.MouseWorldPos;
             float3 currentPos = trans.ValueRO.Position;
             float3 direction = targetPoint - currentPos;
@@ -161,15 +175,10 @@ public partial struct MyPlayerMovementSystem : ISystem
                 trans.ValueRW.Rotation = quaternion.LookRotationSafe(math.normalize(direction), math.up());
             }
 
-            // --- 3. BLOKADA FIZYKI ---
+            // Blokada obrotów fizycznych (¿eby postaæ siê nie przewraca³a)
             velocity.ValueRW.Angular = float3.zero;
         }
     }
 }
 
 
-
-public struct  LeftButtonBefore : IComponentData
-{
-    public bool wasHeld;
-}
