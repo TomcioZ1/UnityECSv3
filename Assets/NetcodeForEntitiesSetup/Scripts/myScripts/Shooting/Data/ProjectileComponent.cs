@@ -12,18 +12,8 @@ public struct ProjectileComponent : IComponentData
     [GhostField] public float3 TargetPosition;
 }
 
-public struct  BulletSpawnTimer : IComponentData
-{
-    public double Timer;
-    public double AddedTime;
-}
 
-public struct ProjectileComponentNoScary : IComponentData
-{
-    public float3 Velocity;
-    public Entity Owner;
- 
-}
+
 
 [GhostComponent]
 public struct ShotEvent : IComponentData
@@ -33,16 +23,16 @@ public struct ShotEvent : IComponentData
     [GhostField] public float3 TargetPos;   // Gdzie raycast trafi³ (punkt koñcowy)
 }
 
-// Pomocniczy komponent na prefabie gracza, ¿eby system wiedzia³, gdzie jest lufa
-public struct MuzzleOffset : IComponentData
-{
-    public float3 Value;
-}
+
 
 // Lokalny (nie-sieciowy) komponent dla wizualnego pocisku
 public struct VisualProjectile : IComponentData
 {
     public float3 Velocity;
     public float3 TargetPos;
-    public float DeathTime;
+    public float3 Scale;
+    public bool IsNew; // Flaga do oznaczania nowo utworzonych pocisków
 }
+
+
+public struct LastProcessedShot : IComponentData { public int Count; }

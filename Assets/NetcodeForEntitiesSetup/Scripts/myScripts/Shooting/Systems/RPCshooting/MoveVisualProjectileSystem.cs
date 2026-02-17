@@ -25,7 +25,7 @@ public partial struct MoveVisualProjectileSystem : ISystem
 
             // 2. Definiujemy parametry precyzji:
             // Promieñ pocisku (po³owa skali X/Y)
-            const float projectileRadius = 0.05f;
+            const float projectileRadius = 0.35f;
             // Margines b³êdu oparty na prêdkoœci (zapobiega "przeskakiwaniu" celu)
             float hitThreshold = math.max(projectileRadius, frameDistance);
             float hitThresholdSq = hitThreshold * hitThreshold;
@@ -37,7 +37,6 @@ public partial struct MoveVisualProjectileSystem : ISystem
             // Sprawdzamy czy dystans do celu jest mniejszy ni¿ to, co przelecimy w tej klatce
             // Dodajemy projectileRadius, aby pocisk znika³ gdy "nos" dotknie celu, a nie œrodek.
             bool isHittingTarget = distToTargetSq <= (hitThresholdSq);
-            bool isExpired = elapsedTime > proj.ValueRO.DeathTime;
 
             if (isHittingTarget)
             {

@@ -42,7 +42,6 @@ public partial struct ClientProjectileVisualizerSystem : ISystem
                 {
                     Velocity = shotEvent.ValueRO.Direction * 20f,
                     TargetPos = shotEvent.ValueRO.TargetPos,
-                    DeathTime = (float)SystemAPI.Time.ElapsedTime + 2f
                 });
 
                 // Aktualizujemy licznik
@@ -56,4 +55,3 @@ public partial struct ClientProjectileVisualizerSystem : ISystem
     }
 }
 
-public struct LastProcessedShot : IComponentData { public int Count; }
