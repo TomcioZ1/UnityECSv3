@@ -9,10 +9,10 @@ using UnityEngine;
 
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [UpdateInGroup(typeof(PredictedFixedStepSimulationSystemGroup))]
-[BurstCompile]
+//[BurstCompile]
 public partial struct ServerShotSystem : ISystem
 {
-    [BurstCompile]
+    //[BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
@@ -70,11 +70,9 @@ public partial struct ServerShotSystem : ISystem
 
                 if (weaponData.isNormalGun)
                 {
-                    ExecuteRaycast(rayStart, baseDirection, 10f, entity, weaponData.damage, physicsWorld, ref healthLookup, out float3 hitPos);
+                    ExecuteRaycast(rayStart, baseDirection, 100f, entity, weaponData.damage, physicsWorld, ref healthLookup, out float3 hitPos);
                     UpdateShotEvent(shotEvent, hitPos, baseDirection);
-
-                    // DEBUG: Czerwona linia dla zwyk³ego strza³u
-                    //DrawDebugLine(rayStart, hitPos, Color.red, 0.2f);
+                    DrawDebugLine(rayStart, hitPos, Color.red, 0.5f);
                 }
                 else if (weaponData.isShotgun)
                 {
@@ -83,27 +81,30 @@ public partial struct ServerShotSystem : ISystem
                     float3 actualUp = math.cross(right, baseDirection);
 
                     float spreadIntensity = 0.05f;
-                    float3[] offsets = new float3[5] {
-                        float3.zero,
-                        right * spreadIntensity,
-                        -right * spreadIntensity,
-                        actualUp * spreadIntensity,
-                        -actualUp * spreadIntensity
-                    };
+
+                    // POPRAWKA BURST: stackalloc zamiast new float3[]
+                    System.Span<float3> offsets = stackalloc float3[5];
+                    offsets[0] = float3.zero;
+                    offsets[1] = right * spreadIntensity;
+                    offsets[2] = -right * spreadIntensity;
+                    offsets[3] = actualUp * spreadIntensity;
+                    offsets[4] = -actualUp * spreadIntensity;
+
+                    float3 centerHit = rayStart + (baseDirection * 15f);
 
                     for (int i = 0; i < 5; i++)
                     {
                         float3 spreadDir = math.normalize(baseDirection + offsets[i]);
-                        ExecuteRaycast(rayStart, spreadDir, 5f, entity, weaponData.damage, physicsWorld, ref healthLookup, out float3 individualHit);
+                        ExecuteRaycast(rayStart, spreadDir, 15f, entity, weaponData.damage, physicsWorld, ref healthLookup, out float3 individualHit);
 
-                        // DEBUG: ¯ó³te linie dla œrutu strzelby
-                        //DrawDebugLine(rayStart, individualHit, Color.yellow, 5f);
+                        if (i == 0) centerHit = individualHit; // Œrodek dla ShotEvent
+                        DrawDebugLine(rayStart, individualHit, Color.yellow, 0.5f);
                     }
-                    UpdateShotEvent(shotEvent, rayStart + baseDirection * 5f, baseDirection);
+                    UpdateShotEvent(shotEvent, centerHit, baseDirection);
                 }
                 else if (weaponData.isGranadeLauncher)
                 {
-                    float3 endPos = rayStart + (baseDirection * 15f);
+                    float3 endPos = rayStart + (baseDirection * 20f);
                     float3 explosionPos = endPos;
 
                     RaycastInput rayInput = new RaycastInput { Start = rayStart, End = endPos, Filter = filter };
@@ -113,7 +114,7 @@ public partial struct ServerShotSystem : ISystem
                     }
 
                     // Logika Wybuchu
-                    float explosionRadius = 1.0f;
+                    float explosionRadius = 2f;
                     NativeList<DistanceHit> distanceHits = new NativeList<DistanceHit>(Allocator.Temp);
 
                     if (physicsWorld.OverlapSphere(explosionPos, explosionRadius, ref distanceHits, filter))
@@ -131,10 +132,8 @@ public partial struct ServerShotSystem : ISystem
                         }
                     }
 
-                    // DEBUG: Zielona linia lotu i bia³y "krzy¿" w miejscu wybuchu
-                    //DrawDebugLine(rayStart, explosionPos, Color.green, 0.2f);
-                    //DrawDebugExplosion(explosionPos, explosionRadius, Color.white);
-
+                    DrawDebugLine(rayStart, explosionPos, Color.green, 0.2f);
+                    DrawDebugExplosion(explosionPos, explosionRadius, Color.white);
                     UpdateShotEvent(shotEvent, explosionPos, baseDirection);
                 }
             }
@@ -143,12 +142,14 @@ public partial struct ServerShotSystem : ISystem
 
     private void ExecuteRaycast(float3 start, float3 dir, float dist, Entity owner, int damage, in PhysicsWorld world, ref ComponentLookup<HealthComponent> healthLookup, out float3 finalHitPos)
     {
-        float3 end = start + (dir * dist);
+        // Offset startowy (0.2m), aby nie trafiæ we w³asny collider
+        float3 offsetStart = start + (dir * 0.2f);
+        float3 end = offsetStart + (dir * dist);
         finalHitPos = end;
 
         RaycastInput input = new RaycastInput
         {
-            Start = start,
+            Start = offsetStart,
             End = end,
             Filter = new CollisionFilter { BelongsTo = 1u << 4, CollidesWith = (1u << 0) | (1u << 3) }
         };
@@ -176,8 +177,6 @@ public partial struct ServerShotSystem : ISystem
         shotEvent.ValueRW.Direction = dir;
     }
 
-    // --- METODY DEBUGOWANIA ---
-
     [BurstDiscard]
     private void DrawDebugLine(float3 start, float3 end, Color color, float time)
     {
@@ -187,7 +186,6 @@ public partial struct ServerShotSystem : ISystem
     [BurstDiscard]
     private void DrawDebugExplosion(float3 pos, float radius, Color color)
     {
-        // Rysuje prosty krzy¿ w miejscu wybuchu o zadanym promieniu
         Debug.DrawLine(pos + new float3(radius, 0, 0), pos + new float3(-radius, 0, 0), color, 0.5f);
         Debug.DrawLine(pos + new float3(0, radius, 0), pos + new float3(0, -radius, 0), color, 0.5f);
         Debug.DrawLine(pos + new float3(0, 0, radius), pos + new float3(0, 0, -radius), color, 0.5f);

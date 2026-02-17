@@ -38,8 +38,17 @@ public partial struct MoveVisualProjectileSystem : ISystem
                 if (proj.ValueRO.IsExplosive && explosionEffectPrefab != Entity.Null)
                 {
                     Entity exp = ecb.Instantiate(explosionEffectPrefab);
-                    ecb.SetComponent(exp, LocalTransform.FromPosition(proj.ValueRO.TargetPos));
-                    // Tutaj mo¿esz dodaæ komponent usuwaj¹cy wybuch po 1 sekundzie (np. Lifetime)
+
+                    // 1. Pobieramy domyœln¹ transformacjê z prefaba
+                    LocalTransform prefabTransform = SystemAPI.GetComponent<LocalTransform>(explosionEffectPrefab);
+
+                    // 2. Nadpisujemy w niej tylko pozycjê, zachowuj¹c skalê i rotacjê z prefaba
+                    prefabTransform.Position = proj.ValueRO.TargetPos;
+
+                    // 3. Aplikujemy zmodyfikowan¹ transformacjê do nowej encji
+                    ecb.SetComponent(exp, prefabTransform);
+
+                    ecb.AddComponent(exp, new Lifetime { RemainingTime = 1.5f });
                 }
 
                 transform.ValueRW.Position = proj.ValueRO.TargetPos;

@@ -44,3 +44,8 @@ public struct ExplosionPrefab : IComponentData
     public Entity Value;
 }
 
+
+public struct Lifetime : IComponentData
+{
+    public float RemainingTime;
+}
