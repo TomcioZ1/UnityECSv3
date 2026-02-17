@@ -7990,6 +7990,70 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2114013912}
   m_CullTransparentMesh: 1
+--- !u!1 &2118752121
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2118752122}
+  - component: {fileID: 2118752123}
+  m_Layer: 0
+  m_Name: AudioManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2118752122
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2118752121}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -62.10439, y: 7.039567, z: 25.241425}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2118752123
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2118752121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f8fe9d76944cbae47a55e7f25dbc0647, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  soundPrefab: {fileID: 3788478986335885493, guid: c824b60441b52884badea86543783a1e, type: 3}
+  soundSettings:
+  - name: 0 Normal shot
+    clip: {fileID: 8300000, guid: 47f8cea510759e147810aa748fc5f1b1, type: 3}
+    volume: 0.3
+  - name: 1 Shotgun
+    clip: {fileID: 8300000, guid: 271eecef02710394fbbf61bc1dc96b66, type: 3}
+    volume: 0.03
+  - name: 2 Walking
+    clip: {fileID: 8300000, guid: fc883ce65886f7144b03184e247e2471, type: 3}
+    volume: 1
+  - name: 3 Explosion
+    clip: {fileID: 8300000, guid: cef2f210221fe2f4f98ec8824f315976, type: 3}
+    volume: 0.6
+  - name: 4 Punch
+    clip: {fileID: 8300000, guid: 452308d1faa3b5d4a8484308e7b8e4f5, type: 3}
+    volume: 0.2
+  - name: 
+    clip: {fileID: 0}
+    volume: 0
 --- !u!1 &2143984111
 GameObject:
   m_ObjectHideFlags: 0
@@ -8042,6 +8106,7 @@ SceneRoots:
   - {fileID: 915975815}
   - {fileID: 947844861}
   - {fileID: 1027618484}
+  - {fileID: 2118752122}
   - {fileID: 1966227288}
   - {fileID: 1351230489}
   - {fileID: 1333208909}

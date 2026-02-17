@@ -1,9 +1,12 @@
+using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Transforms;
+using UnityEditor.PackageManager;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation | WorldSystemFilterFlags.ClientSimulation)]
@@ -36,14 +39,15 @@ public partial struct HandsSystem : ISystem
 
         const float attackSpeed = 3f;
         const float punchDistance = 0.25f;
+        bool isClient = state.WorldUnmanaged.IsClient();
 
         // --- 1. LOGIKA SYMULACJI (Tick-based) ---
         if (networkTime.IsFirstTimeFullyPredictingTick)
         {
             float dt = SystemAPI.Time.DeltaTime;
 
-            foreach (var (input, anim, inventory) in
-                     SystemAPI.Query<RefRO<MyPlayerInput>, RefRW<HandAttackData>, RefRO<PlayerInventory>>()
+            foreach (var (input, anim, inventory, transform) in
+                     SystemAPI.Query<RefRO<MyPlayerInput>, RefRW<HandAttackData>, RefRO<PlayerInventory>, RefRO<LocalTransform>>()
                      .WithAll<Simulate>())
             {
                 bool hasWeapon = CheckIfHasWeapon(inventory.ValueRO);
@@ -54,6 +58,10 @@ public partial struct HandsSystem : ISystem
                     anim.ValueRW.IsAttacking = true;
                     anim.ValueRW.AttackProgress = 0f;
                     anim.ValueRW.HasAppliedDamage = false;
+                    if (isClient)
+                    {
+                        TriggerSound(ecb, 4, transform.ValueRO.Position, false);
+                    }
                 }
 
                 if (anim.ValueRO.IsAttacking)
@@ -128,5 +136,16 @@ public partial struct HandsSystem : ISystem
             4 => inv.Slot4_GrenadeId > 0,
             _ => false
         };
+    }
+
+    public void TriggerSound(EntityCommandBuffer ecb, int id, float3 position, bool isLoop)
+    {
+        Entity soundEntity = ecb.CreateEntity();
+        ecb.AddComponent(soundEntity, new PlaySoundRequest
+        {
+            SoundID = id,
+            Position = position,
+            IsLoop = isLoop
+        });
     }
 }

@@ -125,6 +125,10 @@ public partial struct MyPlayerMovementSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
+            .CreateCommandBuffer(state.WorldUnmanaged);
+
+
         // Wykonujemy zapytanie o graczy
         foreach (var (input, inventory, velocity, trans) in
                  SystemAPI.Query<RefRO<MyPlayerInput>, RefRO<PlayerInventory>, RefRW<PhysicsVelocity>, RefRW<LocalTransform>>()
@@ -155,6 +159,11 @@ public partial struct MyPlayerMovementSystem : ISystem
             float2 moveInput = new float2(input.ValueRO.Horizontal, input.ValueRO.Vertical);
             float3 newLinearVelocity = float3.zero;
 
+            if (math.any(moveInput != float2.zero))
+            {
+                TriggerSound(ecb, 2, trans.ValueRO.Position, true);
+            }
+
             if (math.lengthsq(moveInput) > 0.001f)
             {
                 float2 normalizedInput = math.normalize(moveInput);
@@ -178,6 +187,16 @@ public partial struct MyPlayerMovementSystem : ISystem
             // Blokada obrotów fizycznych (¿eby postaæ siê nie przewraca³a)
             velocity.ValueRW.Angular = float3.zero;
         }
+    }
+    public void TriggerSound(EntityCommandBuffer ecb, int id, float3 position, bool isLoop)
+    {
+        Entity soundEntity = ecb.CreateEntity();
+        ecb.AddComponent(soundEntity, new PlaySoundRequest
+        {
+            SoundID = id,
+            Position = position,
+            IsLoop = isLoop
+        });
     }
 }
 

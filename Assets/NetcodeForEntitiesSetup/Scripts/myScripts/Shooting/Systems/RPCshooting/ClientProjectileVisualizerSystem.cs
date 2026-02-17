@@ -2,6 +2,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
+using UnityEngine;
 
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 public partial struct ClientProjectileVisualizerSystem : ISystem
@@ -52,6 +53,7 @@ public partial struct ClientProjectileVisualizerSystem : ISystem
             {
                 // Dla zwyk³ego karabinu u¿ywamy TargetPos z serwera (jest precyzyjny)
                 SpawnVisualProjectile(ecb, projPrefab, muzzlePos, baseDir, shotEvent.ValueRO.TargetPos, weaponData.isGranadeLauncher);
+                TriggerSound(ecb, 0, muzzlePos, false);
             }
             else if (weaponData.isShotgun)
             {
@@ -87,6 +89,8 @@ public partial struct ClientProjectileVisualizerSystem : ISystem
                     }
 
                     SpawnVisualProjectile(ecb, projPrefab, muzzlePos, spreadDir, pelletTarget, false);
+                    TriggerSound(ecb, 1, muzzlePos, false);
+
                 }
             }
 
@@ -105,5 +109,17 @@ public partial struct ClientProjectileVisualizerSystem : ISystem
             IsNew = true,
             IsExplosive = explosive
         });
+    }
+
+    public void TriggerSound(EntityCommandBuffer ecb, int id, float3 position, bool isLoop)
+    {
+        Entity soundEntity = ecb.CreateEntity();
+        ecb.AddComponent(soundEntity, new PlaySoundRequest
+        {
+            SoundID = id,
+            Position = position,
+            IsLoop = isLoop
+        });
+        //Debug.Log($"Triggered sound {id} at {position}");
     }
 }

@@ -49,6 +49,8 @@ public partial struct MoveVisualProjectileSystem : ISystem
                     ecb.SetComponent(exp, prefabTransform);
 
                     ecb.AddComponent(exp, new Lifetime { RemainingTime = 1.5f });
+
+                    TriggerSound(ecb, 3, proj.ValueRO.TargetPos, false);
                 }
 
                 transform.ValueRW.Position = proj.ValueRO.TargetPos;
@@ -60,5 +62,16 @@ public partial struct MoveVisualProjectileSystem : ISystem
                 proj.ValueRW.IsNew = false;
             }
         }
+    }
+    public void TriggerSound(EntityCommandBuffer ecb, int id, float3 position, bool isLoop)
+    {
+        Entity soundEntity = ecb.CreateEntity();
+        ecb.AddComponent(soundEntity, new PlaySoundRequest
+        {
+            SoundID = id,
+            Position = position,
+            IsLoop = isLoop
+        });
+        //Debug.Log($"Triggered sound {id} at {position}");
     }
 }
