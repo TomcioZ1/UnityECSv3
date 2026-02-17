@@ -12,7 +12,7 @@ public partial struct MoveVisualProjectileSystem : ISystem
         var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
 
         foreach (var (transform, proj, entity) in
-                 SystemAPI.Query<RefRW<LocalTransform>, RefRO<VisualProjectile>>()
+                 SystemAPI.Query<RefRW<LocalTransform>, RefRW<VisualProjectile>>()
                  .WithEntityAccess())
         {
             float3 currentPos = transform.ValueRO.Position;
@@ -41,6 +41,11 @@ public partial struct MoveVisualProjectileSystem : ISystem
             if (isHittingTarget)
             {
                 // Dla idealnej precyzji wizualnej ustawiamy pocisk dok³adnie w TargetPos przed zniszczeniem
+                if(proj.ValueRO.IsNew == true)
+                {
+                    proj.ValueRW.IsNew = false; // Oznaczamy, ¿e pocisk nie jest ju¿ "nowy" (mo¿e byæ u¿ywane do innych celów, np. efektów)
+                    continue;
+                }
                 transform.ValueRW.Position = proj.ValueRO.TargetPos;
                 ecb.DestroyEntity(entity);
             }
@@ -51,6 +56,7 @@ public partial struct MoveVisualProjectileSystem : ISystem
 
                 // Opcjonalnie: upewniamy siê, ¿e przód (oœ Z pocisku 0.7) patrzy w stronê celu
                 transform.ValueRW.Rotation = quaternion.LookRotationSafe(math.normalize(velocity), math.up());
+                proj.ValueRW.IsNew = false; // Oznaczamy, ¿e pocisk nie jest ju¿ "nowy" (mo¿e byæ u¿ywane do innych celów, np. efektów)
             }
         }
     }

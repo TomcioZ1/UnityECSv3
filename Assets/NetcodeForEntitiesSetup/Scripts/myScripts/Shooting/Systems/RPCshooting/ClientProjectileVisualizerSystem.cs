@@ -42,6 +42,7 @@ public partial struct ClientProjectileVisualizerSystem : ISystem
                 {
                     Velocity = shotEvent.ValueRO.Direction * 20f,
                     TargetPos = shotEvent.ValueRO.TargetPos,
+                    IsNew = true
                 });
 
                 // Aktualizujemy licznik
