@@ -18,6 +18,12 @@ public class WeaponAuthoringComponent : MonoBehaviour
     public int Damage = 10;
     public float3 ProjectileSpawner;
 
+    [Header("Weapon Type")]
+    public bool isNormalGun;
+    public bool isShotgun;
+    public bool isGranadeLauncher;
+
+
     class Baker : Baker<WeaponAuthoringComponent>
     {
         public override void Bake(WeaponAuthoringComponent authoring)
@@ -37,7 +43,10 @@ public class WeaponAuthoringComponent : MonoBehaviour
                 reloadTime = authoring.ReloadTime,
                 projectileSpeed = authoring.ProjectileSpeed,
                 damage = authoring.Damage,
-                maxAmmo = authoring.maxAmmo
+                maxAmmo = authoring.maxAmmo,
+                isNormalGun = authoring.isNormalGun,
+                isShotgun = authoring.isShotgun,
+                isGranadeLauncher = authoring.isGranadeLauncher
             });
 
             // Stan roboczy broni (timery)
@@ -52,7 +61,9 @@ public class WeaponAuthoringComponent : MonoBehaviour
             // Netcode
             AddComponent<WeaponOwner>(entity);
             AddComponent<GhostAuthoringComponent>(entity);
-            //AddComponent<GhostOwner>(entity);
+
+
+          
         }
     }
 }

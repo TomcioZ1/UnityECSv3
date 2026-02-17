@@ -37,6 +37,9 @@ public struct WeaponData : IComponentData
     [GhostField] public float reloadTime;
     [GhostField] public float projectileSpeed;
     [GhostField] public int damage;
+    [GhostField] public bool isNormalGun;
+    [GhostField] public bool isShotgun;
+    [GhostField] public bool isGranadeLauncher;
 
 }
 
@@ -76,6 +79,10 @@ public struct WeaponPickup : IComponentData
     public byte WeaponId; // 1 = Pistol, 2 = Shotgun, 3 = AK47 itd.
     public int Ammo;      // Opcjonalnie: ile amunicji ma w œrodku
 }
+
+public struct  ShotgunTag : IComponentData{}
+public struct NormalGunTag : IComponentData { }
+public struct GranadeLauncherTag : IComponentData { }
 
 
 

@@ -8,55 +8,47 @@ public partial struct MoveVisualProjectileSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
         float dt = SystemAPI.Time.DeltaTime;
-        double elapsedTime = SystemAPI.Time.ElapsedTime;
         var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
+
+        Entity explosionEffectPrefab = Entity.Null;
+        if (SystemAPI.HasSingleton<ExplosionPrefab>())
+            explosionEffectPrefab = SystemAPI.GetSingleton<ExplosionPrefab>().Value;
 
         foreach (var (transform, proj, entity) in
                  SystemAPI.Query<RefRW<LocalTransform>, RefRW<VisualProjectile>>()
                  .WithEntityAccess())
         {
             float3 currentPos = transform.ValueRO.Position;
-            float3 velocity = proj.ValueRO.Velocity;
+            float3 nextPos = currentPos + (proj.ValueRO.Velocity * dt);
 
-            // 1. Obliczamy dystans, jaki pocisk pokona w TEJ klatce
-            float3 frameMovement = velocity * dt;
-            float frameDistance = math.length(frameMovement);
-            float3 nextPos = currentPos + frameMovement;
-
-            // 2. Definiujemy parametry precyzji:
-            // Promieñ pocisku (po³owa skali X/Y)
-            const float projectileRadius = 0.35f;
-            // Margines b³êdu oparty na prêdkoœci (zapobiega "przeskakiwaniu" celu)
-            float hitThreshold = math.max(projectileRadius, frameDistance);
-            float hitThresholdSq = hitThreshold * hitThreshold;
-
-            // 3. Obliczamy dystans do celu od aktualnej pozycji
+            // Sprawdzamy czy pocisk min¹³ ju¿ TargetPos
             float distToTargetSq = math.distancesq(currentPos, proj.ValueRO.TargetPos);
+            float frameDistSq = math.distancesq(currentPos, nextPos);
 
-            // 4. Logika trafienia:
-            // Sprawdzamy czy dystans do celu jest mniejszy ni¿ to, co przelecimy w tej klatce
-            // Dodajemy projectileRadius, aby pocisk znika³ gdy "nos" dotknie celu, a nie œrodek.
-            bool isHittingTarget = distToTargetSq <= (hitThresholdSq);
-
-            if (isHittingTarget)
+            // Jeœli odleg³oœæ do celu jest mniejsza ni¿ dystans, który pokonamy w tej klatce -> TRAFIENIE
+            if (distToTargetSq <= frameDistSq)
             {
-                // Dla idealnej precyzji wizualnej ustawiamy pocisk dok³adnie w TargetPos przed zniszczeniem
-                if(proj.ValueRO.IsNew == true)
+                if (proj.ValueRO.IsNew) // Zabezpieczenie przed znikniêciem w 1 klatce
                 {
-                    proj.ValueRW.IsNew = false; // Oznaczamy, ¿e pocisk nie jest ju¿ "nowy" (mo¿e byæ u¿ywane do innych celów, np. efektów)
+                    proj.ValueRW.IsNew = false;
                     continue;
                 }
+
+                // Logika wybuchu wizualnego
+                if (proj.ValueRO.IsExplosive && explosionEffectPrefab != Entity.Null)
+                {
+                    Entity exp = ecb.Instantiate(explosionEffectPrefab);
+                    ecb.SetComponent(exp, LocalTransform.FromPosition(proj.ValueRO.TargetPos));
+                    // Tutaj mo¿esz dodaæ komponent usuwaj¹cy wybuch po 1 sekundzie (np. Lifetime)
+                }
+
                 transform.ValueRW.Position = proj.ValueRO.TargetPos;
                 ecb.DestroyEntity(entity);
             }
             else
             {
-                // Jeœli nie trafi³, aktualizujemy pozycjê i rotacjê (na wypadek zmian kierunku)
                 transform.ValueRW.Position = nextPos;
-
-                // Opcjonalnie: upewniamy siê, ¿e przód (oœ Z pocisku 0.7) patrzy w stronê celu
-                transform.ValueRW.Rotation = quaternion.LookRotationSafe(math.normalize(velocity), math.up());
-                proj.ValueRW.IsNew = false; // Oznaczamy, ¿e pocisk nie jest ju¿ "nowy" (mo¿e byæ u¿ywane do innych celów, np. efektów)
+                proj.ValueRW.IsNew = false;
             }
         }
     }

@@ -47,6 +47,8 @@ public class WeaponPickupAuthoring : MonoBehaviour
                 IsDestroyed = false
             });
 
+           
+
 
         }
     }

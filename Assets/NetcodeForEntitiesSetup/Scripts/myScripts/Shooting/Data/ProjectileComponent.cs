@@ -31,8 +31,16 @@ public struct VisualProjectile : IComponentData
     public float3 Velocity;
     public float3 TargetPos;
     public float3 Scale;
-    public bool IsNew; // Flaga do oznaczania nowo utworzonych pocisków
+    public bool IsNew; // Flaga do oznaczania nowo utworzonych pociskówp
+    public bool IsExplosive;
 }
 
 
 public struct LastProcessedShot : IComponentData { public int Count; }
+
+
+public struct ExplosionPrefab : IComponentData
+{
+    public Entity Value;
+}
+

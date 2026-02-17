@@ -1,4 +1,5 @@
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
@@ -18,7 +19,6 @@ public partial struct ServerShotSystem : ISystem
         double currentTime = SystemAPI.Time.ElapsedTime;
         var healthLookup = SystemAPI.GetComponentLookup<HealthComponent>(false);
 
-        // Szukamy graczy, którzy maj¹ komponent ShotEvent (musi byæ dodany w Authoring/Baking)
         foreach (var (input, inventory, shotEvent, transform, entity) in
                  SystemAPI.Query<RefRO<MyPlayerInput>, RefRO<PlayerInventory>, RefRW<ShotEvent>, RefRO<LocalTransform>>()
                  .WithAll<Simulate>()
@@ -50,62 +50,146 @@ public partial struct ServerShotSystem : ISystem
                 else continue;
             }
 
-
-
-            if (input.ValueRO.leftMouseButton == 1 && currentTime >= workState.NextShotTime)
+            // --- STRZA£ ---
+            if (input.ValueRO.leftMouseButton == 1 && currentTime >= workState.NextShotTime && weaponData.currentAmmo > 0)
             {
                 workState.NextShotTime = (float)currentTime + weaponData.fireRate;
                 weaponData.currentAmmo -= 1;
                 SystemAPI.SetComponent(weaponEntity, workState);
                 SystemAPI.SetComponent(weaponEntity, weaponData);
 
-
-                // 1. Logika Raycastu (tak jak mia³eœ wczeœniej)
                 float3 rayStart = transform.ValueRO.Position + math.mul(transform.ValueRO.Rotation, weaponData.ProjectileSpawner);
-                float3 rayEnd = rayStart + (input.ValueRO.AimDirection * 10f);
+                float3 baseDirection = input.ValueRO.AimDirection;
 
-                float3 finalHitPos = rayEnd;
-                RaycastInput raycastInput = new RaycastInput
+                CollisionFilter filter = new CollisionFilter
                 {
-                    Start = rayStart,
-                    End = rayEnd,
-                    Filter = new CollisionFilter
-                    {
-                        BelongsTo = 1u << 4,
-                        CollidesWith = (1u << 0) | (1u << 3),
-                        GroupIndex = 0
-                    }
+                    BelongsTo = 1u << 4,
+                    CollidesWith = (1u << 0) | (1u << 3),
+                    GroupIndex = 0
                 };
 
-                float3 shotDirection = input.ValueRO.AimDirection;
-
-                // 2. Wykonujemy Raycast
-                if (physicsWorld.CastRay(raycastInput, out Unity.Physics.RaycastHit hit))
+                if (weaponData.isNormalGun)
                 {
-                    if (hit.Entity != entity) // Nie trafiamy samych siebie
-                    {
-                        finalHitPos = hit.Position;
-                        // Tutaj obliczamy kierunek od lufy do punktu trafienia (bardziej precyzyjne dla grafiki)
-                        shotDirection = math.normalize(finalHitPos - rayStart);
+                    ExecuteRaycast(rayStart, baseDirection, 10f, entity, weaponData.damage, physicsWorld, ref healthLookup, out float3 hitPos);
+                    UpdateShotEvent(shotEvent, hitPos, baseDirection);
 
-                        // --- LOGIKA OBRA¯EÑ ---
-                        if (healthLookup.HasComponent(hit.Entity))
+                    // DEBUG: Czerwona linia dla zwyk³ego strza³u
+                    //DrawDebugLine(rayStart, hitPos, Color.red, 0.2f);
+                }
+                else if (weaponData.isShotgun)
+                {
+                    float3 up = math.select(new float3(0, 1, 0), new float3(1, 0, 0), math.abs(baseDirection.y) > 0.9f);
+                    float3 right = math.normalize(math.cross(baseDirection, up));
+                    float3 actualUp = math.cross(right, baseDirection);
+
+                    float spreadIntensity = 0.05f;
+                    float3[] offsets = new float3[5] {
+                        float3.zero,
+                        right * spreadIntensity,
+                        -right * spreadIntensity,
+                        actualUp * spreadIntensity,
+                        -actualUp * spreadIntensity
+                    };
+
+                    for (int i = 0; i < 5; i++)
+                    {
+                        float3 spreadDir = math.normalize(baseDirection + offsets[i]);
+                        ExecuteRaycast(rayStart, spreadDir, 5f, entity, weaponData.damage, physicsWorld, ref healthLookup, out float3 individualHit);
+
+                        // DEBUG: ¯ó³te linie dla œrutu strzelby
+                        //DrawDebugLine(rayStart, individualHit, Color.yellow, 5f);
+                    }
+                    UpdateShotEvent(shotEvent, rayStart + baseDirection * 5f, baseDirection);
+                }
+                else if (weaponData.isGranadeLauncher)
+                {
+                    float3 endPos = rayStart + (baseDirection * 15f);
+                    float3 explosionPos = endPos;
+
+                    RaycastInput rayInput = new RaycastInput { Start = rayStart, End = endPos, Filter = filter };
+                    if (physicsWorld.CastRay(rayInput, out Unity.Physics.RaycastHit hit))
+                    {
+                        explosionPos = hit.Position;
+                    }
+
+                    // Logika Wybuchu
+                    float explosionRadius = 1.0f;
+                    NativeList<DistanceHit> distanceHits = new NativeList<DistanceHit>(Allocator.Temp);
+
+                    if (physicsWorld.OverlapSphere(explosionPos, explosionRadius, ref distanceHits, filter))
+                    {
+                        for (int i = 0; i < distanceHits.Length; i++)
                         {
-                            var health = healthLookup[hit.Entity];
-                            health.HealthPoints -= weaponData.damage;
-                            health.LastHitBy = entity;
-                            healthLookup[hit.Entity] = health;
+                            Entity hitEnt = distanceHits[i].Entity;
+                            if (healthLookup.HasComponent(hitEnt))
+                            {
+                                var health = healthLookup[hitEnt];
+                                health.HealthPoints -= weaponData.damage;
+                                health.LastHitBy = entity;
+                                healthLookup[hitEnt] = health;
+                            }
                         }
                     }
-                }
 
-                // 3. AKTUALIZACJA EVENTU (Musi byæ poza IFem trafienia!)
-                // Dziêki temu nawet strza³ w niebo zespawnuje pocisk u klientów
-                shotEvent.ValueRW.ShotCount++;
-                shotEvent.ValueRW.TargetPos = finalHitPos;
-                shotEvent.ValueRW.Direction = shotDirection;
-                //Debug.DrawLine(rayStart, rayEnd, Color.red, 0.1f);
+                    // DEBUG: Zielona linia lotu i bia³y "krzy¿" w miejscu wybuchu
+                    //DrawDebugLine(rayStart, explosionPos, Color.green, 0.2f);
+                    //DrawDebugExplosion(explosionPos, explosionRadius, Color.white);
+
+                    UpdateShotEvent(shotEvent, explosionPos, baseDirection);
+                }
             }
         }
+    }
+
+    private void ExecuteRaycast(float3 start, float3 dir, float dist, Entity owner, int damage, in PhysicsWorld world, ref ComponentLookup<HealthComponent> healthLookup, out float3 finalHitPos)
+    {
+        float3 end = start + (dir * dist);
+        finalHitPos = end;
+
+        RaycastInput input = new RaycastInput
+        {
+            Start = start,
+            End = end,
+            Filter = new CollisionFilter { BelongsTo = 1u << 4, CollidesWith = (1u << 0) | (1u << 3) }
+        };
+
+        if (world.CastRay(input, out Unity.Physics.RaycastHit hit))
+        {
+            if (hit.Entity != owner)
+            {
+                finalHitPos = hit.Position;
+                if (healthLookup.HasComponent(hit.Entity))
+                {
+                    var health = healthLookup[hit.Entity];
+                    health.HealthPoints -= damage;
+                    health.LastHitBy = owner;
+                    healthLookup[hit.Entity] = health;
+                }
+            }
+        }
+    }
+
+    private void UpdateShotEvent(RefRW<ShotEvent> shotEvent, float3 hitPos, float3 dir)
+    {
+        shotEvent.ValueRW.ShotCount++;
+        shotEvent.ValueRW.TargetPos = hitPos;
+        shotEvent.ValueRW.Direction = dir;
+    }
+
+    // --- METODY DEBUGOWANIA ---
+
+    [BurstDiscard]
+    private void DrawDebugLine(float3 start, float3 end, Color color, float time)
+    {
+        Debug.DrawLine(start, end, color, time);
+    }
+
+    [BurstDiscard]
+    private void DrawDebugExplosion(float3 pos, float radius, Color color)
+    {
+        // Rysuje prosty krzy¿ w miejscu wybuchu o zadanym promieniu
+        Debug.DrawLine(pos + new float3(radius, 0, 0), pos + new float3(-radius, 0, 0), color, 0.5f);
+        Debug.DrawLine(pos + new float3(0, radius, 0), pos + new float3(0, -radius, 0), color, 0.5f);
+        Debug.DrawLine(pos + new float3(0, 0, radius), pos + new float3(0, 0, -radius), color, 0.5f);
     }
 }

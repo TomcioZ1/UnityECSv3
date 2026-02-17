@@ -9,7 +9,6 @@ using Unity.Transforms;
 using UnityEngine;
 
 [UpdateInGroup(typeof(PredictedFixedStepSimulationSystemGroup))]
-//[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 public partial struct WeaponPickupSystem : ISystem
 {
     private ComponentLookup<WeaponPickup> pickupLookup;
@@ -20,11 +19,13 @@ public partial struct WeaponPickupSystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
+        // Inicjalizacja Lookupów
         pickupLookup = state.GetComponentLookup<WeaponPickup>(true);
         inventoryLookup = state.GetComponentLookup<PlayerInventory>(false);
         ghostStateLookup = state.GetComponentLookup<GhostState>(false);
         linkedEntityLookup = state.GetBufferLookup<LinkedEntityGroup>(true);
 
+        // System wymaga danych fizyki do dzia³ania
         state.RequireForUpdate<SimulationSingleton>();
     }
 
@@ -36,6 +37,7 @@ public partial struct WeaponPickupSystem : ISystem
         var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
 
+        // Aktualizacja danych w ka¿dej klatce przed uruchomieniem Joba
         pickupLookup.Update(ref state);
         inventoryLookup.Update(ref state);
         ghostStateLookup.Update(ref state);
@@ -50,6 +52,7 @@ public partial struct WeaponPickupSystem : ISystem
             ECB = ecb
         };
 
+        // Podpiêcie pod zdarzenia Triggerów z silnika fizyki Unity Physics
         state.Dependency = job.Schedule(SystemAPI.GetSingleton<SimulationSingleton>(), state.Dependency);
     }
 
@@ -67,6 +70,7 @@ public partial struct WeaponPickupSystem : ISystem
             Entity entityA = triggerEvent.EntityA;
             Entity entityB = triggerEvent.EntityB;
 
+            // Sprawdzanie która encja to gracz, a która to pickup
             if (InventoryLookup.HasComponent(entityA) && PickupLookup.HasComponent(entityB))
                 ProcessPickup(entityA, entityB);
             else if (InventoryLookup.HasComponent(entityB) && PickupLookup.HasComponent(entityA))
@@ -75,39 +79,47 @@ public partial struct WeaponPickupSystem : ISystem
 
         private void ProcessPickup(Entity player, Entity pickupEntity)
         {
+            // Podstawowe zabezpieczenie przed Ghostami i duplikacj¹ pickupu
             if (!GhostStateLookup.HasComponent(pickupEntity)) return;
 
             var ghostState = GhostStateLookup[pickupEntity];
-            // Jeœli ju¿ zniszczone (IsDestroyed) lub posiada tag (przetworzone), przerywamy
             if (ghostState.IsDestroyed) return;
 
             var inventory = InventoryLookup[player];
             var pickup = PickupLookup[pickupEntity];
             bool pickedUp = false;
 
+            // LOGIKA PODMIANY BRONI:
+
+            // 1. Jeœli to granat (ID >= 10), po prostu przypisz do slotu granatów
             if (pickup.WeaponId >= 10)
             {
                 inventory.Slot4_GrenadeId = pickup.WeaponId;
                 pickedUp = true;
             }
-            else if (inventory.Slot1_WeaponId == 0)
+            // 2. Jeœli to broñ palna (ID < 10), NADPISZ obecn¹ broñ
+            else
             {
+                // Tutaj usuwamy warunek "if == 0", aby nowa broñ zawsze wchodzi³a na miejsce starej
                 inventory.Slot1_WeaponId = pickup.WeaponId;
                 pickedUp = true;
+
+                // UWAGA: Jeœli chcia³byœ wyrzucaæ star¹ broñ na ziemiê, 
+                // musia³byœ tutaj wys³aæ ¿¹danie zmaterializowania nowego pickupa 
+                // z ID, które w³aœnie nadpisujesz.
             }
 
             if (pickedUp)
             {
+                // Zapisujemy zmiany w ekwipunku gracza
                 InventoryLookup[player] = inventory;
 
-                // 1. Ustawiamy stan dla NetCode (synchronizacja z klientem)
+                // 1. Oznaczamy dla NetCode, ¿e ten obiekt na serwerze "nie ¿yje"
                 ghostState.IsDestroyed = true;
                 GhostStateLookup[pickupEntity] = ghostState;
 
-                // 2. Dodajemy tag blokuj¹cy ponowne wejœcie w logikê na serwerze
-                //ECB.AddComponent<AlreadyProcessedTag>(pickupEntity);
-
-                // 3. Czyœcimy wizualia i fizykê (na serwerze g³ównie fizykê)
+                // 2. Wy³¹czamy renderowanie i fizykê, aby obiekt znikn¹³ natychmiastowo
+                // Sprawdzamy dzieci (np. modele 3D, efekty), jeœli istniej¹ w LinkedEntityGroup
                 if (LinkedEntityLookup.HasBuffer(pickupEntity))
                 {
                     var children = LinkedEntityLookup[pickupEntity];
@@ -116,17 +128,22 @@ public partial struct WeaponPickupSystem : ISystem
                         DisableEntity(children[i].Value);
                     }
                 }
-                else
-                {
-                    DisableEntity(pickupEntity);
-                }
+
+                DisableEntity(pickupEntity);
             }
         }
 
         private void DisableEntity(Entity e)
         {
+            // Zapobiega rysowaniu obiektu na ekranie
             ECB.AddComponent<DisableRendering>(e);
-            ECB.RemoveComponent<PhysicsCollider>(e);
+
+            // Usuwa collider, aby gracz nie "odbija³" siê od niewidzialnej broni 
+            // i nie wyzwala³ triggera ponownie przed pe³nym usuniêciem
+            if (PickupLookup.HasComponent(e))
+            {
+                ECB.RemoveComponent<PhysicsCollider>(e);
+            }
         }
     }
 }
