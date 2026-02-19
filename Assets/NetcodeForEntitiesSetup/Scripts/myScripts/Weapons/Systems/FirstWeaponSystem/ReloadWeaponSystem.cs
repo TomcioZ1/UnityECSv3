@@ -4,6 +4,8 @@ using Unity.NetCode;
 
 [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
 [BurstCompile]
+
+// System prze³adowania broni
 public partial struct ReloadWeaponSystem : ISystem
 {
     [BurstCompile]

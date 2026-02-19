@@ -8,6 +8,8 @@ using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
 
+// System obs³uguj¹cy podnoszenie broni przez gracza
+
 [UpdateInGroup(typeof(PredictedFixedStepSimulationSystemGroup))]
 public partial struct WeaponPickupSystem : ISystem
 {

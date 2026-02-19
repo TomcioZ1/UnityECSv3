@@ -3,6 +3,8 @@ using Unity.Entities;
 using Unity.Multiplayer.Center.NetcodeForEntitiesSetup;
 using Unity.NetCode;
 
+// Pozwala klientowi na zmiane broni
+
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
 [BurstCompile]

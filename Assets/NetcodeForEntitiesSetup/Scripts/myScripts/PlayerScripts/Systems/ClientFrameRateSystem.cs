@@ -10,8 +10,8 @@ public partial class ClientFrameRateSystem : SystemBase
     {
         int targetFPS = 60; // Ustaw docelow¹ liczbê klatek na sekundê
         // To wykona siê tylko w œwiecie klienta
-        QualitySettings.vSyncCount = 0;
         Application.targetFrameRate = targetFPS;
+        QualitySettings.vSyncCount = 1;
         Debug.Log("Client World detected: FPS set to: " + targetFPS);
     }
 

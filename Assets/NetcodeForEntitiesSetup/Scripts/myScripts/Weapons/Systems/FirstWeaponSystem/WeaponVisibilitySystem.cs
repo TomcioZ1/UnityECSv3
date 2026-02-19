@@ -6,6 +6,8 @@ using Unity.Transforms;
 
 [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
 [BurstCompile]
+
+// Ukrywa niepotrzebne modele broni i r¹k
 public partial struct WeaponVisibilitySystem : ISystem
 {
     private ComponentLookup<BaseScale> _baseScaleLookup;

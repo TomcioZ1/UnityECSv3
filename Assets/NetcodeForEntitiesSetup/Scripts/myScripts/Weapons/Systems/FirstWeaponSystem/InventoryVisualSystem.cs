@@ -5,6 +5,8 @@ using Unity.NetCode;
 using Unity.Physics.Systems;
 using Unity.Transforms;
 
+// Podpinanie broni do socketów
+
 [UpdateInGroup(typeof(PredictedSimulationSystemGroup), OrderLast = true)]
 [BurstCompile]
 public partial struct InventoryVisualSystem : ISystem

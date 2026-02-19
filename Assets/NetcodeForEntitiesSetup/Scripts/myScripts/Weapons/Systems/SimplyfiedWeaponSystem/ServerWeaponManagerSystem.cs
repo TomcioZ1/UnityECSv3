@@ -10,55 +10,58 @@ public partial struct ServerWeaponManagerSystemv2 : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        if (!SystemAPI.TryGetSingleton<WeaponResourcesv2>(out var res)) return;
+        if (!SystemAPI.TryGetSingleton<WeaponResources>(out var res)) return;
         var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
         var ghostOwnerLookup = state.GetComponentLookup<GhostOwner>(true);
 
         foreach (var (inventory, input, socket, playerEntity) in
-                 SystemAPI.Query<RefRW<PlayerInventoryv2>, RefRO<MyPlayerInput>, RefRO<WeaponSocket>>()
+                 SystemAPI.Query<RefRW<PlayerInventory>, RefRO<MyPlayerInput>, RefRO<WeaponSocket>>()
                  .WithAll<Simulate>().WithEntityAccess())
         {
-            // Prze³¹czanie slotów
-            if (input.ValueRO.choosenWeapon >= 1 && input.ValueRO.choosenWeapon <= 2)
+            // 1. Zmiana slotu
+            if (input.ValueRO.choosenWeapon >= 1 && input.ValueRO.choosenWeapon <= 4)
                 inventory.ValueRW.ActiveSlotIndex = input.ValueRO.choosenWeapon;
 
-            // Logika wyboru prefabu
-            byte currentTargetId = (inventory.ValueRO.ActiveSlotIndex == 2) ? (byte)99 : inventory.ValueRO.WeaponId;
-            // 99 = techniczne ID dla r¹k
+            // 2. Logika wyboru ID (Slot 3 to zawsze rêce - ID 99)
+            byte targetId = inventory.ValueRO.ActiveSlotIndex switch
+            {
+                1 => inventory.ValueRO.Slot1_WeaponId,
+                2 => inventory.ValueRO.Slot2_WeaponId,
+                3 => 99, // Rêce
+                4 => inventory.ValueRO.Slot4_GrenadeId,
+                _ => 0
+            };
 
-            if (inventory.ValueRO.LastActiveSlot != inventory.ValueRO.ActiveSlotIndex ||
-                inventory.ValueRO.LastSpawnedId != currentTargetId)
+            // 3. Spawnowanie jeœli ID siê zmieni³o
+            if (inventory.ValueRO.CurrentlySpawnedWeaponId != targetId)
             {
                 if (inventory.ValueRO.CurrentWeaponEntity != Entity.Null)
                     ecb.DestroyEntity(inventory.ValueRO.CurrentWeaponEntity);
 
-                Entity prefabToSpawn = Entity.Null;
-
-                if (inventory.ValueRO.ActiveSlotIndex == 2)
-                    prefabToSpawn = res.Hands; // Spawn r¹k
-                else
-                    prefabToSpawn = inventory.ValueRO.WeaponId switch
-                    {
-                        1 => res.Pistol,
-                        2 => res.Shotgun,
-                        3 => res.AK47,
-                        _ => Entity.Null
-                    };
-
-                if (prefabToSpawn != Entity.Null)
+                Entity prefab = targetId switch
                 {
-                    Entity newWep = ecb.Instantiate(prefabToSpawn);
+                    99 => res.gun, // U¿yj res.gun lub dodaj 'Hands' do WeaponResources
+                    1 => res.Pistol,
+                    2 => res.Shotgun,
+                    3 => res.ak47,
+                    _ => Entity.Null
+                };
+
+                if (prefab != Entity.Null)
+                {
+                    Entity newWep = ecb.Instantiate(prefab);
                     ecb.AddComponent(newWep, new Parent { Value = socket.ValueRO.WeaponSocketEntity });
 
+                    // Wa¿ne: Przypisanie w³aœciciela
                     if (ghostOwnerLookup.TryGetComponent(playerEntity, out var owner))
                         ecb.SetComponent(newWep, new GhostOwner { NetworkId = owner.NetworkId });
 
+                    // ¯eby broñ zniknê³a razem z graczem
                     ecb.AppendToBuffer(playerEntity, new LinkedEntityGroup { Value = newWep });
                     inventory.ValueRW.CurrentWeaponEntity = newWep;
                 }
 
-                inventory.ValueRW.LastActiveSlot = inventory.ValueRO.ActiveSlotIndex;
-                inventory.ValueRW.LastSpawnedId = currentTargetId;
+                inventory.ValueRW.CurrentlySpawnedWeaponId = targetId;
             }
         }
     }

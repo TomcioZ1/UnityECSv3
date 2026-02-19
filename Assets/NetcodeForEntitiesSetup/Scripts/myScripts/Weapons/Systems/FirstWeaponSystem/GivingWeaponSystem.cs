@@ -3,6 +3,7 @@ using Unity.Entities;
 using Unity.Multiplayer.Center.NetcodeForEntitiesSetup;
 using Unity.NetCode;
 using Unity.Transforms;
+// System jak prze³¹czamy bronie np 1 póŸniej klikamy 2 to sie bron zmienia
 
 [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
