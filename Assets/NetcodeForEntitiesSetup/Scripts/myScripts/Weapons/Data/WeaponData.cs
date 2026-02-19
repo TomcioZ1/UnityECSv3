@@ -40,7 +40,9 @@ public struct WeaponData : IComponentData
     [GhostField] public bool isNormalGun;
     [GhostField] public bool isShotgun;
     [GhostField] public bool isGranadeLauncher;
-
+    [GhostField] public float maxRange;
+    /*[GhostField]*/
+    public float cameraOffset;
 }
 
 public struct WeaponWorkState : IComponentData

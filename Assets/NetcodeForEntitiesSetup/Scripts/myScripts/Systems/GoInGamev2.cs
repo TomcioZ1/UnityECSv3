@@ -131,8 +131,8 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
 
                     var networkId = _networkIdLookup[connection];
                     var playerName = goInGameRequest.ValueRO.PlayerName;
-                    SendDestroyedGhostsToClient(ref state, ecb, connection);
-                    Debug.Log($"[Server] Spawning '{playerName}' w {spawnerTransform.Position} ze skal¹ prefaba {prefabTransform.Scale}");
+                    //SendDestroyedGhostsToClient(ref state, ecb, connection);
+                    //Debug.Log($"[Server] Spawning '{playerName}' w {spawnerTransform.Position} ze skal¹ prefaba {prefabTransform.Scale}");
 
 
                     ecb.AddComponent<NetworkStreamInGame>(connection);

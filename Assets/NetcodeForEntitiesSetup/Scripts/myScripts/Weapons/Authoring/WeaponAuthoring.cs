@@ -17,6 +17,8 @@ public class WeaponAuthoringComponent : MonoBehaviour
     public float ProjectileSpeed = 20f;
     public int Damage = 10;
     public float3 ProjectileSpawner;
+    public float cameraOffset = 10f;
+    public float maxRange = 10f;
 
     [Header("Weapon Type")]
     public bool isNormalGun;
@@ -46,7 +48,9 @@ public class WeaponAuthoringComponent : MonoBehaviour
                 maxAmmo = authoring.maxAmmo,
                 isNormalGun = authoring.isNormalGun,
                 isShotgun = authoring.isShotgun,
-                isGranadeLauncher = authoring.isGranadeLauncher
+                isGranadeLauncher = authoring.isGranadeLauncher,
+                cameraOffset = authoring.cameraOffset,
+                maxRange = authoring.maxRange
             });
 
             // Stan roboczy broni (timery)

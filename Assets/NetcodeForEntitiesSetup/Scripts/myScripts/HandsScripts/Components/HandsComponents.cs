@@ -47,10 +47,18 @@ public struct HandAttackData : IComponentData
     // To pole NIE jest [GhostField], bo s³u¿y tylko jako wewnêtrzna 
     // flaga logiczna serwera podczas zamachu.
     public bool HasAppliedDamage;
+
+    // DŸwiek
+    public bool HasPlayedSound;
 }
 
 [GhostComponent]
 public struct BaseScale : IComponentData
 {
     [GhostField] public float3 Value;
+}
+
+public struct PunchFiredEvent : IComponentData
+{
+    public float3 Position;
 }

@@ -152,6 +152,7 @@ MonoBehaviour:
     x: 0.07
     y: 0
     z: 0.83
+  cameraOffset: 8
   isNormalGun: 1
   isShotgun: 0
   isGranadeLauncher: 0

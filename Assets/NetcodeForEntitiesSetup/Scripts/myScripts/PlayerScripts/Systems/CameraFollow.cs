@@ -18,41 +18,52 @@ public partial class CameraFollowSystem : SystemBase
             if (_cachedProxy == null) return;
         }
 
-        // Pobieramy dane gracza. Jeœli gracz ma IsDestroyedTag, pêtla siê nie wykona.
-        // U¿ywamy SystemAPI.Query, co jest standardem w Unity 6.
-        foreach (var (ltw, localTag) in SystemAPI.Query<RefRO<LocalToWorld>, EnabledRefRO<GhostOwnerIsLocal>>()
+        // U¿ywamy Entity w Query, aby mieæ dostêp do danych encji gracza
+        foreach (var (transform, inventory, localTag) in SystemAPI.Query<RefRO<LocalToWorld>, RefRO<PlayerInventory>, EnabledRefRO<GhostOwnerIsLocal>>()
                      .WithAll<PlayerTag>()
                      .WithNone<IsDestroyedTag>())
         {
-            float3 playerPos = ltw.ValueRO.Position;
-            float3 targetPos = playerPos + (float3)_cachedProxy.Offset;
-            Transform camTransform = _cachedProxy.transform;
+            Entity weaponEntity = inventory.ValueRO.CurrentWeaponEntity;
+            float3 playerPos = transform.ValueRO.Position;
+            float3 targetPos = playerPos;
 
+            // --- NAPRAWA: Bezpieczne pobieranie komponentu broni ---
+            // Najpierw sprawdzamy, czy encja nie jest Null i czy posiada komponent WeaponData
+            if (weaponEntity != Entity.Null && SystemAPI.HasComponent<WeaponData>(weaponEntity))
+            {
+                var weaponData = SystemAPI.GetComponent<WeaponData>(weaponEntity);
+
+                // Teraz bezpiecznie modyfikujemy targetPos o offset kamery broni
+                targetPos = new float3(targetPos.x, targetPos.y + weaponData.cameraOffset, targetPos.z);
+
+                // Jeœli potrzebujesz weaponOffset (ProjectileSpawner), pobierz go tutaj:
+                // var weaponOffset = weaponData.ProjectileSpawner; 
+            }
+            else
+            {
+                targetPos = playerPos + (float3)_cachedProxy.Offset;
+            }
+
+                Transform camTransform = _cachedProxy.transform;
             float3 currentPos = camTransform.position;
             float dt = SystemAPI.Time.DeltaTime;
 
             // --- ZABEZPIECZENIE PRZED DRGANIEM I RESPAWNEM ---
             float distSq = math.distancesq(currentPos, targetPos);
 
-            // Jeœli dystans jest ogromny (> 15m), to znaczy, ¿e gracz siê zrespawnowa³ 
-            // lub w³aœnie zgin¹³ (teleportacja pod mapê). 
-            // Wtedy robimy natychmiastowy skok pozycji.
-            if (distSq > 225f)
+            if (distSq > 225f) // > 15m
             {
                 camTransform.position = targetPos;
             }
             else
             {
-                // Wyk³adnicze wyg³adzanie
                 float smoothingStrength = 1.0f - math.exp(-_cachedProxy.Smoothness * dt);
                 camTransform.position = math.lerp(currentPos, targetPos, smoothingStrength);
             }
 
-            // Sztywne ustawienie rotacji kamery
             camTransform.rotation = Quaternion.Euler(_cachedProxy.PitchAngle, 0, 0);
 
-            // ZnaleŸliœmy naszego gracza, koñczymy
-            break;
+            break; // ZnaleŸliœmy lokalnego gracza, wychodzimy z pêtli
         }
     }
 }

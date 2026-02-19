@@ -1,12 +1,8 @@
-using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Transforms;
-using UnityEditor.PackageManager;
-using UnityEngine;
-using UnityEngine.UIElements;
 
 [UpdateInGroup(typeof(PredictedSimulationSystemGroup))]
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation | WorldSystemFilterFlags.ClientSimulation)]
@@ -14,14 +10,13 @@ using UnityEngine.UIElements;
 public partial struct HandsSystem : ISystem
 {
     private ComponentLookup<LocalTransform> _transformLookup;
-    // Dodajemy lookup dla Parent, aby bezpiecznie sprawdzaæ jego istnienie
     private ComponentLookup<Parent> _parentLookup;
 
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
         _transformLookup = state.GetComponentLookup<LocalTransform>(false);
-        _parentLookup = state.GetComponentLookup<Parent>(true); // ReadOnly
+        _parentLookup = state.GetComponentLookup<Parent>(true);
         state.RequireForUpdate<NetworkTime>();
     }
 
@@ -33,7 +28,6 @@ public partial struct HandsSystem : ISystem
         var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
 
-        // Odœwie¿amy lookupy
         _transformLookup.Update(ref state);
         _parentLookup.Update(ref state);
 
@@ -42,44 +36,42 @@ public partial struct HandsSystem : ISystem
         bool isClient = state.WorldUnmanaged.IsClient();
 
         // --- 1. LOGIKA SYMULACJI (Tick-based) ---
-        if (networkTime.IsFirstTimeFullyPredictingTick)
+        // U¿ywamy WithEntityAccess(), aby móc dodaæ komponent PunchFiredEvent
+        foreach (var (input, anim, inventory, transform, entity) in
+                 SystemAPI.Query<RefRO<MyPlayerInput>, RefRW<HandAttackData>, RefRO<PlayerInventory>, RefRO<LocalTransform>>()
+                 .WithAll<Simulate>()
+                 .WithEntityAccess())
         {
-            float dt = SystemAPI.Time.DeltaTime;
+            bool hasWeapon = CheckIfHasWeapon(inventory.ValueRO);
+            bool canPunch = input.ValueRO.leftMouseButton == 1 && !hasWeapon;
 
-            foreach (var (input, anim, inventory, transform) in
-                     SystemAPI.Query<RefRO<MyPlayerInput>, RefRW<HandAttackData>, RefRO<PlayerInventory>, RefRO<LocalTransform>>()
-                     .WithAll<Simulate>())
+            if (canPunch && !anim.ValueRO.IsAttacking)
             {
-                bool hasWeapon = CheckIfHasWeapon(inventory.ValueRO);
-                bool canPunch = input.ValueRO.leftMouseButton == 1 && !hasWeapon;
+                anim.ValueRW.IsAttacking = true;
+                anim.ValueRW.AttackProgress = 0f;
+                anim.ValueRW.HasAppliedDamage = false;
 
-                if (canPunch && !anim.ValueRO.IsAttacking)
+                // KLUCZ: DŸwiêk wyzwalamy tylko na kliencie i tylko przy pierwszej predykcji
+                if (isClient && networkTime.IsFirstTimeFullyPredictingTick)
                 {
-                    anim.ValueRW.IsAttacking = true;
-                    anim.ValueRW.AttackProgress = 0f;
-                    anim.ValueRW.HasAppliedDamage = false;
-                    if (isClient)
-                    {
-                        TriggerSound(ecb, 4, transform.ValueRO.Position, false);
-                    }
+                    ecb.AddComponent(entity, new PunchFiredEvent { Position = transform.ValueRO.Position });
                 }
+            }
 
-                if (anim.ValueRO.IsAttacking)
+            if (anim.ValueRO.IsAttacking)
+            {
+                anim.ValueRW.AttackProgress += SystemAPI.Time.DeltaTime * attackSpeed;
+
+                if (anim.ValueRO.AttackProgress >= 1f)
                 {
-                    anim.ValueRW.AttackProgress += dt * attackSpeed;
-
-                    if (anim.ValueRO.AttackProgress >= 1f)
-                    {
-                        anim.ValueRW.IsAttacking = false;
-                        anim.ValueRW.AttackProgress = 0f;
-                        anim.ValueRW.AttackIsLeft = !anim.ValueRO.AttackIsLeft;
-                        anim.ValueRW.HasAppliedDamage = false;
-                    }
+                    anim.ValueRW.IsAttacking = false;
+                    anim.ValueRW.AttackProgress = 0f;
+                    anim.ValueRW.AttackIsLeft = !anim.ValueRO.AttackIsLeft;
                 }
             }
         }
 
-        // --- 2. WIZUALIZACJA (P³ynna) ---
+        // --- 2. WIZUALIZACJA (Render-based / Smooth) ---
         foreach (var (anim, socket, activeHands) in
                  SystemAPI.Query<RefRO<HandAttackData>, HandsSocket, RefRW<ActiveHands>>())
         {
@@ -93,10 +85,8 @@ public partial struct HandsSystem : ISystem
                 float fwd = punchEffect * punchDistance;
                 float side = punchEffect * (punchDistance * 0.3f);
 
-                if (anim.ValueRO.AttackIsLeft)
-                    leftOffset = new float3(side, 0, fwd);
-                else
-                    rightOffset = new float3(-side, 0, fwd);
+                if (anim.ValueRO.AttackIsLeft) leftOffset = new float3(side, 0, fwd);
+                else rightOffset = new float3(-side, 0, fwd);
             }
 
             UpdateHand(ecb, activeHands.ValueRO.LeftHandEntity, socket.LeftHandSocket, leftOffset, ref activeHands.ValueRW.PrevLeftHand);
@@ -107,17 +97,12 @@ public partial struct HandsSystem : ISystem
     [BurstCompile]
     private void UpdateHand(EntityCommandBuffer ecb, Entity hand, Entity socket, float3 offset, ref Entity prevHand)
     {
-        // Sprawdzamy czy encja istnieje i ma transform za pomoc¹ lookupa
         if (hand == Entity.Null || !_transformLookup.HasComponent(hand)) return;
 
         if (hand != prevHand)
         {
-            // U¿ywamy lookupa do sprawdzenia czy ma komponent Parent
-            if (_parentLookup.HasComponent(hand))
-                ecb.SetComponent(hand, new Parent { Value = socket });
-            else
-                ecb.AddComponent(hand, new Parent { Value = socket });
-
+            if (_parentLookup.HasComponent(hand)) ecb.SetComponent(hand, new Parent { Value = socket });
+            else ecb.AddComponent(hand, new Parent { Value = socket });
             prevHand = hand;
         }
 
@@ -132,20 +117,8 @@ public partial struct HandsSystem : ISystem
         {
             1 => inv.Slot1_WeaponId > 0,
             2 => inv.Slot2_WeaponId > 0,
-            3 => false,
             4 => inv.Slot4_GrenadeId > 0,
             _ => false
         };
-    }
-
-    public void TriggerSound(EntityCommandBuffer ecb, int id, float3 position, bool isLoop)
-    {
-        Entity soundEntity = ecb.CreateEntity();
-        ecb.AddComponent(soundEntity, new PlaySoundRequest
-        {
-            SoundID = id,
-            Position = position,
-            IsLoop = isLoop
-        });
     }
 }

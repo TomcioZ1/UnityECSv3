@@ -104,7 +104,7 @@ public partial struct ClientProjectileVisualizerSystem : ISystem
         ecb.SetComponent(vProj, LocalTransform.FromPositionRotation(pos, quaternion.LookRotationSafe(dir, math.up())));
         ecb.AddComponent(vProj, new VisualProjectile
         {
-            Velocity = dir * 20f, // Prêdkoœæ wizualna œrutu (szybciej wygl¹da lepiej)
+            Velocity = dir * 40f, // Prêdkoœæ wizualna œrutu (szybciej wygl¹da lepiej)
             TargetPos = target,
             IsNew = true,
             IsExplosive = explosive

@@ -70,7 +70,7 @@ public partial struct ServerShotSystem : ISystem
 
                 if (weaponData.isNormalGun)
                 {
-                    ExecuteRaycast(rayStart, baseDirection, 100f, entity, weaponData.damage, physicsWorld, ref healthLookup, out float3 hitPos);
+                    ExecuteRaycast(rayStart, baseDirection, weaponData.maxRange, entity, weaponData.damage, physicsWorld, ref healthLookup, out float3 hitPos);
                     UpdateShotEvent(shotEvent, hitPos, baseDirection);
                     DrawDebugLine(rayStart, hitPos, Color.red, 0.5f);
                 }
@@ -90,12 +90,12 @@ public partial struct ServerShotSystem : ISystem
                     offsets[3] = actualUp * spreadIntensity;
                     offsets[4] = -actualUp * spreadIntensity;
 
-                    float3 centerHit = rayStart + (baseDirection * 15f);
+                    float3 centerHit = rayStart + (baseDirection * weaponData.maxRange);
 
                     for (int i = 0; i < 5; i++)
                     {
                         float3 spreadDir = math.normalize(baseDirection + offsets[i]);
-                        ExecuteRaycast(rayStart, spreadDir, 15f, entity, weaponData.damage, physicsWorld, ref healthLookup, out float3 individualHit);
+                        ExecuteRaycast(rayStart, spreadDir, weaponData.maxRange, entity, weaponData.damage, physicsWorld, ref healthLookup, out float3 individualHit);
 
                         if (i == 0) centerHit = individualHit; // Œrodek dla ShotEvent
                         DrawDebugLine(rayStart, individualHit, Color.yellow, 0.5f);

@@ -3949,7 +3949,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3504d83891a0b6a4d968d0d005e78813, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Offset: {x: 0, y: 10, z: 0}
+  Offset: {x: 0, y: 5, z: 0}
   Smoothness: 10
   PitchAngle: 90
 --- !u!1 &922533370
@@ -8050,7 +8050,7 @@ MonoBehaviour:
     volume: 0.6
   - name: 4 Punch
     clip: {fileID: 8300000, guid: 452308d1faa3b5d4a8484308e7b8e4f5, type: 3}
-    volume: 0.2
+    volume: 0.3
   - name: 
     clip: {fileID: 0}
     volume: 0
