@@ -20,7 +20,7 @@ MonoBehaviour:
     NetworkTickRate: 0
     MaxSimulationStepsPerFrame: 1
     MaxSimulationStepBatchSize: 4
-    TargetFrameRateMode: 1
+    TargetFrameRateMode: 0
     m_SendSnapshotsForCatchUpTicks: 0
     SnapshotAckMaskCapacity: 4096
     m_ClampPartialTicksThreshold: 5

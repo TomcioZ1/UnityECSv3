@@ -55,7 +55,7 @@ public partial struct FootprintSystem : ISystem
                 // Ustawiamy czas ¿ycia (u¿ywamy pola MaxValue do obliczeñ zanikania)
                 // Zak³adamy, ¿e czas ¿ycia bierzesz np. z distanceBetweenSteps * 10 lub sta³ej, 
                 // jeœli nie masz go w struct, wpisa³em 5.0f jako bazê.
-                
+
 
                 // Inicjalizujemy kolor (wymagane do zanikania)
                 ecb.AddComponent(footprint, new MaterialPropertyBaseColor { Value = new float4(0, 0, 0, 1) });

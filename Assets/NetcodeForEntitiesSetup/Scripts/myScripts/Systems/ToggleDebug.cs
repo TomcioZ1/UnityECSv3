@@ -1,4 +1,4 @@
-using Unity.Burst;
+/*using Unity.Burst;
 using Unity.Entities;
 using Unity.NetCode;
 using UnityEngine;
@@ -44,4 +44,4 @@ public partial struct ToggleDebug : ISystem
             pauseState.ValueRW.IsPaused = false;
         }
     }
-}
+}*/

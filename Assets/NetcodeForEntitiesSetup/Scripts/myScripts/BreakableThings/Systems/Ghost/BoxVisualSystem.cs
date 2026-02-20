@@ -34,8 +34,8 @@ public partial struct BoxVisualSystem : ISystem
             if (currentHp <= 0)
             {
                 box.ValueRW.isDestoryed = true;
-                /*if (isServer) ecb.DestroyEntity(entity);
-                else ecb.AddComponent<Disabled>(entity);*/
+                if (isServer) ecb.DestroyEntity(entity);
+                else ecb.AddComponent<Disabled>(entity);
 
 
                 // 1. CA£KOWITE WY£¥CZENIE RENDEROWANIA
@@ -46,7 +46,7 @@ public partial struct BoxVisualSystem : ISystem
 
                 // 2. CA£KOWITE WY£¥CZENIE FIZYKI
                 ecb.RemoveComponent<Unity.Physics.PhysicsCollider>(entity);
-                
+
 
 
                 continue;

@@ -9,10 +9,10 @@ using UnityEngine;
 
 [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
 [UpdateInGroup(typeof(PredictedFixedStepSimulationSystemGroup))]
-//[BurstCompile]
+[BurstCompile]
 public partial struct ServerShotSystem : ISystem
 {
-    //[BurstCompile]
+    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
@@ -72,7 +72,7 @@ public partial struct ServerShotSystem : ISystem
                 {
                     ExecuteRaycast(rayStart, baseDirection, weaponData.maxRange, entity, weaponData.damage, physicsWorld, ref healthLookup, out float3 hitPos);
                     UpdateShotEvent(shotEvent, hitPos, baseDirection);
-                    DrawDebugLine(rayStart, hitPos, Color.red, 0.5f);
+                    //DrawDebugLine(rayStart, hitPos, Color.red, 0.5f);
                 }
                 else if (weaponData.isShotgun)
                 {
@@ -98,7 +98,7 @@ public partial struct ServerShotSystem : ISystem
                         ExecuteRaycast(rayStart, spreadDir, weaponData.maxRange, entity, weaponData.damage, physicsWorld, ref healthLookup, out float3 individualHit);
 
                         if (i == 0) centerHit = individualHit; // Œrodek dla ShotEvent
-                        DrawDebugLine(rayStart, individualHit, Color.yellow, 0.5f);
+                        //DrawDebugLine(rayStart, individualHit, Color.yellow, 0.5f);
                     }
                     UpdateShotEvent(shotEvent, centerHit, baseDirection);
                 }
@@ -132,8 +132,8 @@ public partial struct ServerShotSystem : ISystem
                         }
                     }
 
-                    DrawDebugLine(rayStart, explosionPos, Color.green, 0.2f);
-                    DrawDebugExplosion(explosionPos, explosionRadius, Color.white);
+                    //DrawDebugLine(rayStart, explosionPos, Color.green, 0.2f);
+                    //DrawDebugExplosion(explosionPos, explosionRadius, Color.white);
                     UpdateShotEvent(shotEvent, explosionPos, baseDirection);
                 }
             }
@@ -181,6 +181,7 @@ public partial struct ServerShotSystem : ISystem
     private void DrawDebugLine(float3 start, float3 end, Color color, float time)
     {
         Debug.DrawLine(start, end, color, time);
+
     }
 
     [BurstDiscard]

@@ -29,11 +29,7 @@ public struct DestroyedDrop : IComponentData
 public struct AlreadyProcessedTag : ICleanupComponentData { }
 
 
-public struct SyncDestroyedGhostsRPC : IRpcCommand
-{
-    // U¿ywamy FixedList, aby przes³aæ listê ID. 128 elementów to bezpieczny limit dla RPC.
-    public FixedList128Bytes<int> GhostIds;
-}
+
 
 [GhostComponent]
 public struct GhostState : IComponentData

@@ -154,30 +154,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             }
 
 
-            private void SendDestroyedGhostsToClient(ref SystemState state, EntityCommandBuffer ecb, Entity targetConnection)
-            {
-                if (!SystemAPI.TryGetSingletonEntity<DestroyedGhostElement>(out Entity bufferEntity))
-                    return;
-
-                var destroyedBuffer = SystemAPI.GetBuffer<DestroyedGhostElement>(bufferEntity);
-
-                var rpcData = new SyncDestroyedGhostsRPC();
-                rpcData.GhostIds = new FixedList128Bytes<int>();
-
-                // Przepisujemy dane z bufora do listy RPC (max 32 inty dla FixedList128)
-                // Jeœli potrzebujesz wiêcej, u¿yj FixedList512Bytes (max 128 intów)
-                for (int i = 0; i < destroyedBuffer.Length && i < 32; i++)
-                {
-                    rpcData.GhostIds.Add(destroyedBuffer[i].GhostId);
-                }
-
-                var rpcEntity = ecb.CreateEntity();
-                ecb.AddComponent(rpcEntity, rpcData);
-                ecb.AddComponent(rpcEntity, new SendRpcCommandRequest { TargetConnection = targetConnection });
-
-                Debug.Log($"[Server] Wys³ano RPC z {rpcData.GhostIds.Length} zniszczonymi duchami do klienta.");
-            }
-
+          
 
 
 

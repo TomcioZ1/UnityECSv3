@@ -80,7 +80,7 @@ public partial struct PlayerDeathSystem : ISystem
                 }
 
                 // 4. Sprz¹tanie ekwipunku
-                
+
 
                 // UWAGA: Nie wywo³ujemy ecb.DestroyEntity(entity)! 
                 // Encja musi prze¿yæ, aby system respawnu móg³ j¹ przywróciæ.

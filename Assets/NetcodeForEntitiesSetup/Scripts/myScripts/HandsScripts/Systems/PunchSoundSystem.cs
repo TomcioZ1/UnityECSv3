@@ -27,7 +27,7 @@ public partial struct PunchSoundSystem : ISystem
             });
 
             // LOGUJEMY (pojawi siê tylko raz na uderzenie!)
-            UnityEngine.Debug.Log($"[SoundSystem] Odtwarzam dŸwiêk na pozycji {punchEvent.Position}");
+            //UnityEngine.Debug.Log($"[SoundSystem] Odtwarzam dŸwiêk na pozycji {punchEvent.Position}");
 
             // USUWAMY KOMPONENT, aby nie odtwarzaæ go w nastêpnej klatce
             ecb.RemoveComponent<PunchFiredEvent>(entity);

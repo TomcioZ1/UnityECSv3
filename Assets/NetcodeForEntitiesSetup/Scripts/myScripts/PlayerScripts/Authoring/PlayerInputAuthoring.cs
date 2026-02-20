@@ -22,6 +22,15 @@ public struct MyPlayerInput : IInputComponentData
     public byte choosenWeapon;
 }
 
+public struct PlayerCharacterProperties : IComponentData
+{
+    public float Radius;           // Szerokoœæ kolizji (np. 0.4f)
+    public float VerticalVelocity; // Aktualna prêdkoœæ spadania
+    public float Gravity;          // Wartoœæ grawitacji (np. -15.0f)
+    public float CharacterHeightOffset;
+    public float StepHeight;
+}
+
 [DisallowMultipleComponent]
 public class PlayerInputAuthoring : MonoBehaviour
 {
@@ -31,6 +40,7 @@ public class PlayerInputAuthoring : MonoBehaviour
         {
             var entity = GetEntity(TransformUsageFlags.Dynamic);
             AddComponent(entity, new MyPlayerInput { choosenWeapon = 3 });
+            AddComponent(entity, new PlayerCharacterProperties { Radius = 0.125f, StepHeight = 0.0f, Gravity = -2, CharacterHeightOffset = 0.2f });
         }
     }
 }
@@ -117,7 +127,8 @@ public partial struct MyPlayerInputSystem : ISystem
 
 
 
-[UpdateInGroup(typeof(PredictedFixedStepSimulationSystemGroup))]
+/*//[UpdateInGroup(typeof(PredictedFixedStepSimulationSystemGroup))]
+[UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
 [UpdateAfter(typeof(PhysicsSystemGroup))]
 [BurstCompile]
 public partial struct MyPlayerMovementSystem : ISystem
@@ -197,7 +208,7 @@ public partial struct MyPlayerMovementSystem : ISystem
             Position = position,
             IsLoop = isLoop
         });
-    }
-}
+    }*/
+
 
 

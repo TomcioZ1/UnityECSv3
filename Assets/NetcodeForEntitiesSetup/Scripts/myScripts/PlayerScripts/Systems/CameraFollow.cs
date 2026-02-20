@@ -1,11 +1,12 @@
+using Unity.Burst;
 using Unity.Entities;
-using Unity.Transforms;
 using Unity.Mathematics;
 using Unity.NetCode;
+using Unity.Transforms;
 using UnityEngine;
 
 [UpdateInGroup(typeof(PresentationSystemGroup))]
-[UpdateAfter(typeof(TransformSystemGroup))]
+//[UpdateAfter(typeof(TransformSystemGroup))]
 public partial class CameraFollowSystem : SystemBase
 {
     private CameraTargetProxy _cachedProxy;
@@ -44,7 +45,7 @@ public partial class CameraFollowSystem : SystemBase
                 targetPos = playerPos + (float3)_cachedProxy.Offset;
             }
 
-                Transform camTransform = _cachedProxy.transform;
+            Transform camTransform = _cachedProxy.transform;
             float3 currentPos = camTransform.position;
             float dt = SystemAPI.Time.DeltaTime;
 

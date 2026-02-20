@@ -21,7 +21,7 @@ public partial struct FootprintDestroySystem : ISystem
                  SystemAPI.Query<RefRW<FootprintLifeTime>, RefRW<MaterialPropertyBaseColor>>()
                  .WithEntityAccess())
         {
-            lifetime.ValueRW.Value -= deltaTime; 
+            lifetime.ValueRW.Value -= deltaTime;
 
             // Obliczamy ile % ¿ycia zosta³o (1.0 -> 0.0)
             float lifeRatio = lifetime.ValueRO.Value / lifetime.ValueRO.MaxValue;

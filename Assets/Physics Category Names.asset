@@ -19,8 +19,8 @@ MonoBehaviour:
   - Box
   - Projectile
   - Pickup
-  - 
-  - 
+  - Ground
+  - GunUI
   - 
   - 
   - 

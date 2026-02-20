@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.NetCode;
 using Unity.Networking.Transport;
@@ -16,7 +17,7 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         void Start()
         {
             // 1. Sprawdzamy, czy to na pewno serwer (Headless)
-            if (Application.isBatchMode)
+            if (Application.isBatchMode || true)
             {
                 UnityEngine.Debug.Log("[SERVER] Wykryto tryb Dedicated Server. Inicjalizacja...");
 
@@ -26,6 +27,8 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                 Application.runInBackground = true;
                 QualitySettings.vSyncCount = 0;
                 Application.targetFrameRate = 0;
+
+                //NativeLeakDetection.Mode = NativeLeakDetectionMode.EnabledWithStackTrace;
 
 
                 StartDedicatedServer();

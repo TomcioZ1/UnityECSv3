@@ -41,18 +41,18 @@ public partial class FireShootDirectionSystem : SystemBase
         // Szukamy lokalnego gracza i aktualizujemy jego input
         foreach (var (input, transform) in SystemAPI.Query<RefRW<MyPlayerInput>, RefRO<LocalTransform>>().WithAll<GhostOwnerIsLocal>())
         {
-            
-                // Obliczamy kierunek
-                float3 direction = worldMousePoint - transform.ValueRO.Position;
-                direction.y = 0;
 
-                // Zapisujemy znormalizowany kierunek
-                if (math.lengthsq(direction) > 0.001f)
-                {
-                    input.ValueRW.AimDirection = math.normalize(direction);
-                }
+            // Obliczamy kierunek
+            float3 direction = worldMousePoint - transform.ValueRO.Position;
+            direction.y = 0;
 
-            
+            // Zapisujemy znormalizowany kierunek
+            if (math.lengthsq(direction) > 0.001f)
+            {
+                input.ValueRW.AimDirection = math.normalize(direction);
+            }
+
+
 
         }
     }
