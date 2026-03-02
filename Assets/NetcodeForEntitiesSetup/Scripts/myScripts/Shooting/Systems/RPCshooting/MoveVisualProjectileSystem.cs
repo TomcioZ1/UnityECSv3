@@ -48,7 +48,13 @@ public partial struct MoveVisualProjectileSystem : ISystem
                     // 3. Aplikujemy zmodyfikowan¹ transformacjê do nowej encji
                     ecb.SetComponent(exp, prefabTransform);
 
-                    ecb.AddComponent(exp, new Lifetime { RemainingTime = 0.7f });
+                    float lifetime = 0.7f; // Czas trwania efektu
+                    ecb.AddComponent(exp, new Lifetime { 
+                        RemainingTime = lifetime,
+                        TotalDuration = lifetime
+                    });
+
+                    ecb.AddComponent(exp, new DissolveProperty { Value = 0f });
 
                     TriggerSound(ecb, 3, proj.ValueRO.TargetPos, false);
                 }

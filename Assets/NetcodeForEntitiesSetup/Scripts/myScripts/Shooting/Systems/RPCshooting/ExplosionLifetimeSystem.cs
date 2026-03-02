@@ -1,5 +1,6 @@
 using Unity.Burst;
 using Unity.Entities;
+using Unity.Mathematics;
 
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 [BurstCompile]
@@ -8,18 +9,26 @@ public partial struct ExplosionLifetimeSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        // U¿ywamy EndSimulationEntityCommandBufferSystem, aby usun¹æ encjê po zakoñczeniu obliczeñ w klatce
         var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
 
         float dt = SystemAPI.Time.DeltaTime;
 
-        // Szukamy wszystkich encji z komponentem Lifetime
-        foreach (var (lifetime, entity) in SystemAPI.Query<RefRW<Lifetime>>().WithEntityAccess())
+        // Zapytanie o Lifetime ORAZ DissolveProperty
+        foreach (var (lifetime, dissolve, entity) in
+                 SystemAPI.Query<RefRW<Lifetime>, RefRW<DissolveProperty>>()
+                 .WithEntityAccess())
         {
             lifetime.ValueRW.RemainingTime -= dt;
 
-            if (lifetime.ValueRW.RemainingTime <= 0)
+            // Obliczamy postêp: 1.0 - (0.7 / 0.7) = 0 na pocz¹tku
+            // Pod koniec: 1.0 - (0 / 0.7) = 1.0 na koñcu
+            float progress = 1.0f - math.saturate(lifetime.ValueRO.RemainingTime / lifetime.ValueRO.TotalDuration);
+
+            // Przypisujemy do parametru shadera
+            dissolve.ValueRW.Value = progress;
+
+            if (lifetime.ValueRO.RemainingTime <= 0)
             {
                 ecb.DestroyEntity(entity);
             }

@@ -48,4 +48,5 @@ public struct ExplosionPrefab : IComponentData
 public struct Lifetime : IComponentData
 {
     public float RemainingTime;
+    public float TotalDuration; // Opcjonalnie, jeœli chcemy mieæ dostêp do ca³kowitego czasu ¿ycia (np. dla efektów wizualnych)
 }
