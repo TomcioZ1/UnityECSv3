@@ -37,6 +37,12 @@ public class BoxAuthoring : MonoBehaviour
                 MeshHeight = detectedHeight,
                 CenterOffset = detectedCenterY // Zapisujemy do komponentu
             });
+            AddComponent(entity, new GhostState
+            {
+                IsDestroyed = false
+            });
+
+
         }
     }
 }

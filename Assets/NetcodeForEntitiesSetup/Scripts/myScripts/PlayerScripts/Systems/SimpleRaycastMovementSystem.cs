@@ -12,6 +12,8 @@ public partial struct SimpleRaycastMovementSystem : ISystem
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
+        var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
+            .CreateCommandBuffer(state.WorldUnmanaged);
         var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
         float deltaTime = SystemAPI.Time.DeltaTime;
 
@@ -45,6 +47,12 @@ public partial struct SimpleRaycastMovementSystem : ISystem
 
             // --- 3. RUCH POZIOMY I ELIMINACJA DRGAÑ (DEPENETRACJA) ---
             float2 moveInput = new float2(input.ValueRO.Horizontal, input.ValueRO.Vertical);
+            if(input.ValueRO.Horizontal!= 0 || input.ValueRO.Vertical != 0)
+            {
+                TriggerSound(ecb, 2, trans.ValueRO.Position, true);
+            }
+
+
             if (math.lengthsq(moveInput) > 0.001f)
             {
                 float3 moveDir = new float3(moveInput.x, 0, moveInput.y);
@@ -86,5 +94,19 @@ public partial struct SimpleRaycastMovementSystem : ISystem
             if (math.lengthsq(lookDir) > 0.001f)
                 trans.ValueRW.Rotation = quaternion.LookRotationSafe(math.normalize(lookDir), math.up());
         }
+    }
+
+
+
+
+    public void TriggerSound(EntityCommandBuffer ecb, int id, float3 position, bool isLoop)
+    {
+        Entity soundEntity = ecb.CreateEntity();
+        ecb.AddComponent(soundEntity, new PlaySoundRequest
+        {
+            SoundID = id,
+            Position = position,
+            IsLoop = isLoop
+        });
     }
 }

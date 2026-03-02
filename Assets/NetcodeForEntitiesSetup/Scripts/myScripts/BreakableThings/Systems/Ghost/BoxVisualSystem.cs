@@ -19,8 +19,8 @@ public partial struct BoxVisualSystem : ISystem
         var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged);
 
-        foreach (var (box, health, transform, entity) in
-                 SystemAPI.Query<RefRW<BoxComponent>, RefRO<HealthComponent>, RefRW<LocalTransform>>()
+        foreach (var (box, health, transform, ghostState, entity) in
+                 SystemAPI.Query<RefRW<BoxComponent>, RefRO<HealthComponent>, RefRW<LocalTransform>, RefRW<GhostState>>()
                  .WithAll<Simulate>()
                  .WithEntityAccess())
         {
@@ -33,9 +33,9 @@ public partial struct BoxVisualSystem : ISystem
 
             if (currentHp <= 0)
             {
-                box.ValueRW.isDestoryed = true;
-                if (isServer) ecb.DestroyEntity(entity);
-                else ecb.AddComponent<Disabled>(entity);
+                ghostState.ValueRW.IsDestroyed = true;
+                /*if (isServer) ecb.DestroyEntity(entity);
+                else ecb.AddComponent<Disabled>(entity);*/
 
 
                 // 1. CA£KOWITE WY£¥CZENIE RENDEROWANIA
