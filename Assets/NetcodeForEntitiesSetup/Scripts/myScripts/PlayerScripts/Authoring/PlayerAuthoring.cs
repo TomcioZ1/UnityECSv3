@@ -24,7 +24,11 @@ public class PlayerAuthoring : MonoBehaviour
             // Rejestrujemy komponenty tagowe i logiczne
             AddComponent<PlayerTag>(entity);
 
-            AddComponent(entity, new HealthComponent { HealthPoints = authoring.InitialHealth });
+            AddComponent(entity, new HealthComponent { 
+                HealthPoints = authoring.InitialHealth,
+                MaxHealthPoints = authoring.InitialHealth,
+
+            });
             AddComponent(entity, new HealthComponentHistory { HealthPoints = authoring.InitialHealth });
 
             AddComponent(entity, new PlayerInventory { });
