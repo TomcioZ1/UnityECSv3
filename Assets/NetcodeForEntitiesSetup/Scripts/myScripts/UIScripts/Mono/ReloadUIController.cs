@@ -11,8 +11,11 @@ public class ReloadUIController : MonoBehaviour
 
     public void UpdateProgressFromData(float progress, bool isVisible)
     {
+
+        //Debug.Log($"Aktualizacja UI: Progress = {progress * 100f}%, Visible = {isVisible}");
         if (reloadPanel.activeSelf != isVisible)
             reloadPanel.SetActive(isVisible);
+
 
         if (isVisible)
             reloadSlider.value = progress;

@@ -33,9 +33,11 @@ public partial struct ServerShotSystem : ISystem
             // --- LOGIKA RELOADU ---
             if (!workState.IsReloading && (input.ValueRO.reloadRequested == 1 || weaponData.currentAmmo <= 0) && weaponData.currentAmmo < weaponData.magSize)
             {
+                weaponData.isReloading = true;
                 workState.IsReloading = true;
                 workState.ReloadTimer = (float)currentTime + weaponData.reloadTime;
                 SystemAPI.SetComponent(weaponEntity, workState);
+                SystemAPI.SetComponent(weaponEntity, weaponData);
             }
 
             if (workState.IsReloading)
@@ -44,10 +46,12 @@ public partial struct ServerShotSystem : ISystem
                 {
                     weaponData.currentAmmo = weaponData.magSize;
                     workState.IsReloading = false;
+                    weaponData.isReloading = false;
                     SystemAPI.SetComponent(weaponEntity, weaponData);
                     SystemAPI.SetComponent(weaponEntity, workState);
                 }
                 else continue;
+                
             }
 
             // --- STRZA£ ---

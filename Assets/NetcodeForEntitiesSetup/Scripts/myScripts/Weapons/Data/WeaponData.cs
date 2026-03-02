@@ -35,6 +35,7 @@ public struct WeaponData : IComponentData
     [GhostField] public int maxAmmo;
     [GhostField] public float fireRate;
     [GhostField] public float reloadTime;
+    [GhostField] public bool isReloading;
     [GhostField] public float projectileSpeed;
     [GhostField] public int damage;
     [GhostField] public bool isNormalGun;

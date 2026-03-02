@@ -143,9 +143,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxAmmo: 120
-  MagSize: 5
+  MagSize: 30
   FireRate: 0.2
-  ReloadTime: 5
+  ReloadTime: 2.5
   ProjectileSpeed: 15
   Damage: 30
   ProjectileSpawner:

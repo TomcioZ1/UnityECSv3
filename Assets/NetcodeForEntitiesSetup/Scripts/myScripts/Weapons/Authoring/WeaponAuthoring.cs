@@ -50,7 +50,8 @@ public class WeaponAuthoringComponent : MonoBehaviour
                 isShotgun = authoring.isShotgun,
                 isGranadeLauncher = authoring.isGranadeLauncher,
                 cameraOffset = authoring.cameraOffset,
-                maxRange = authoring.maxRange
+                maxRange = authoring.maxRange,
+                isReloading = false  //XD
             });
 
             // Stan roboczy broni (timery)
