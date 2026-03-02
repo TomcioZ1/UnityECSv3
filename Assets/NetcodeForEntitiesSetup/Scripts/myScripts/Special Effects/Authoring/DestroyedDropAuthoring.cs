@@ -12,6 +12,7 @@ class DestroyedDropAuthoring : MonoBehaviour
             // Dodajemy komponent danych kropelki
             AddComponent(entity, new DestroyedDrop());
             AddComponent(entity, new BaseScale { Value = authoring.transform.localScale });
+            AddComponent(entity, new DissolveProperty { Value = 0f });
         }
     }
 }

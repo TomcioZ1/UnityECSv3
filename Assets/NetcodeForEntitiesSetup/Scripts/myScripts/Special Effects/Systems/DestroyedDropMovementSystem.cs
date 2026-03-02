@@ -2,7 +2,9 @@ using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using Unity.Rendering; // Wymagane dla MaterialProperty
 using UnityEngine;
+
 
 [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
 [BurstCompile]
@@ -14,6 +16,7 @@ public partial struct DestroyedDropMovementSystem : ISystem
         var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
             .CreateCommandBuffer(state.WorldUnmanaged).AsParallelWriter();
 
+        // System automatycznie znajdzie encje, które maj¹ DestroyedDrop, LocalTransform ORAZ DissolveProperty
         new DestroyedDropJob
         {
             DeltaTime = SystemAPI.Time.DeltaTime,
@@ -30,9 +33,11 @@ public partial struct DestroyedDropMovementSystem : ISystem
         public EntityCommandBuffer.ParallelWriter ECB;
 
         void Execute([ChunkIndexInQuery] int chunkIndex, Entity entity,
-                     ref DestroyedDrop drop, ref LocalTransform transform)
+                     ref DestroyedDrop drop,
+                     ref LocalTransform transform,
+                     ref DissolveProperty dissolve) // <--- Dodane do Execute
         {
-            // 1. Grawitacja i ruch (tylko jeœli obiekt jest nad ziemi¹ lub ma prêdkoœæ pionow¹)
+            // 1. Grawitacja i ruch
             if (transform.Position.y > 0 || drop.Velocity.y > 0)
             {
                 drop.Velocity += Gravity * DeltaTime;
@@ -43,13 +48,18 @@ public partial struct DestroyedDropMovementSystem : ISystem
             if (transform.Position.y < 0)
             {
                 transform.Position.y = 0;
-                drop.Velocity = float3.zero; // Zatrzymuje siê w miejscu po upadku
+                drop.Velocity = float3.zero;
             }
 
-            // 3. Skalowanie na podstawie czasu ¿ycia
-            // saturate pilnuje, ¿eby wynik by³ w przedziale 0.0 - 1.0
+            // 3. Obliczanie postêpu ¿ycia
             float lifeRatio = math.saturate(drop.RemainingLife / drop.MaxLife);
-            transform.Scale = drop.BaseScale * lifeRatio;
+
+            // Logika Dissolve:
+            // Jeœli w shaderze 0 = widoczny, a 1 = rozpuszczony, u¿ywamy (1 - lifeRatio)
+            dissolve.Value = 1.0f - lifeRatio;
+
+            // Opcjonalnie: mo¿esz zachowaæ skalowanie lub polegaæ tylko na dissolve
+            //transform.Scale = drop.BaseScale * lifeRatio;
 
             // 4. Odliczanie czasu i niszczenie
             drop.RemainingLife -= DeltaTime;

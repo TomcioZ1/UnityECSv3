@@ -143,9 +143,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxAmmo: 120
-  MagSize: 30
+  MagSize: 5
   FireRate: 0.2
-  ReloadTime: 2
+  ReloadTime: 5
   ProjectileSpeed: 15
   Damage: 30
   ProjectileSpawner:
@@ -153,6 +153,7 @@ MonoBehaviour:
     y: 0
     z: 0.83
   cameraOffset: 8
+  maxRange: 10
   isNormalGun: 1
   isShotgun: 0
   isGranadeLauncher: 0

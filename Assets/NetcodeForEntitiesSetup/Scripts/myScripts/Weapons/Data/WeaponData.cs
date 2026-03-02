@@ -90,6 +90,11 @@ public struct GranadeLauncherTag : IComponentData { }
 
 
 
+public struct ReloadUIRequest : IComponentData
+{
+    public float StartTime;    // Czas rozpoczêcia (SystemAPI.Time.ElapsedTime)
+    public float Duration;     // Czas trwania (z WeaponData.reloadTime)
+}
 
 
 
