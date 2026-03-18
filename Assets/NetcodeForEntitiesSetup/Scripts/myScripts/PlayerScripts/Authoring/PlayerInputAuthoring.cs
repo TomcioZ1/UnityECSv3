@@ -100,11 +100,6 @@ public partial struct MyPlayerInputSystem : ISystem
         // 5. Query - u¿ywamy GhostOwnerIsLocal, aby wype³niæ input tylko dla naszego gracza
         foreach (var playerInput in SystemAPI.Query<RefRW<MyPlayerInput>>().WithAll<GhostOwnerIsLocal>())
         {
-           /* if(playerInput.ValueRO.leftMouseButton == 0 && leftMouse) 
-            {
-                playerInput.ValueRW.SpawnBulletTime = (float)SystemAPI.Time.ElapsedTime + 0.05f;
-            }*/
-
             playerInput.ValueRW.leftMouseButton = leftMouse ? (byte)1 : (byte)0;
             playerInput.ValueRW.reloadRequested = rkeypressed ? (byte)1 : (byte)0;
             if (choosenWeapon != 0) playerInput.ValueRW.choosenWeapon = choosenWeapon;
@@ -127,88 +122,6 @@ public partial struct MyPlayerInputSystem : ISystem
 
 
 
-/*//[UpdateInGroup(typeof(PredictedFixedStepSimulationSystemGroup))]
-[UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
-[UpdateAfter(typeof(PhysicsSystemGroup))]
-[BurstCompile]
-public partial struct MyPlayerMovementSystem : ISystem
-{
-    [BurstCompile]
-    public void OnUpdate(ref SystemState state)
-    {
-        var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
-            .CreateCommandBuffer(state.WorldUnmanaged);
-
-
-        // Wykonujemy zapytanie o graczy
-        foreach (var (input, inventory, velocity, trans) in
-                 SystemAPI.Query<RefRO<MyPlayerInput>, RefRO<PlayerInventory>, RefRW<PhysicsVelocity>, RefRW<LocalTransform>>()
-                 .WithAll<Simulate>())
-        {
-            float currentMoveSpeed = 4f;
-
-            // 1. Sprawdzamy, czy gracz trzyma rêce czy broñ, 
-            // korzystaj¹c z identycznej logiki co w Twoim WeaponVisibilitySystem
-            byte activeSlot = inventory.ValueRO.ActiveSlotIndex;
-
-            bool isHoldingWeapon = activeSlot switch
-            {
-                1 => inventory.ValueRO.Slot1_WeaponId > 0,
-                2 => inventory.ValueRO.Slot2_WeaponId > 0,
-                4 => inventory.ValueRO.Slot4_GrenadeId > 0,
-                _ => false
-            };
-
-            // 2. Logika spowolnienia:
-            // Jeœli LPM jest wciœniêty ORAZ gracz ma wybran¹ i posiadan¹ broñ (nie rêce)
-            if (input.ValueRO.leftMouseButton == 1 && isHoldingWeapon)
-            {
-                currentMoveSpeed = 2f;
-            }
-
-            // --- 3. RUCH LINIOWY ---
-            float2 moveInput = new float2(input.ValueRO.Horizontal, input.ValueRO.Vertical);
-            float3 newLinearVelocity = float3.zero;
-
-            if (math.any(moveInput != float2.zero))
-            {
-                TriggerSound(ecb, 2, trans.ValueRO.Position, true);
-            }
-
-            if (math.lengthsq(moveInput) > 0.001f)
-            {
-                float2 normalizedInput = math.normalize(moveInput);
-                newLinearVelocity = new float3(normalizedInput.x * currentMoveSpeed, 0, normalizedInput.y * currentMoveSpeed);
-            }
-
-            // Aplikujemy prêdkoœæ, zachowuj¹c istniej¹c¹ prêdkoœæ pionow¹ (grawitacja)
-            velocity.ValueRW.Linear = new float3(newLinearVelocity.x, velocity.ValueRO.Linear.y, newLinearVelocity.z);
-
-            // --- 4. ROTACJA ---
-            float3 targetPoint = input.ValueRO.MouseWorldPos;
-            float3 currentPos = trans.ValueRO.Position;
-            float3 direction = targetPoint - currentPos;
-            direction.y = 0;
-
-            if (math.lengthsq(direction) > 0.001f)
-            {
-                trans.ValueRW.Rotation = quaternion.LookRotationSafe(math.normalize(direction), math.up());
-            }
-
-            // Blokada obrotów fizycznych (¿eby postaæ siê nie przewraca³a)
-            velocity.ValueRW.Angular = float3.zero;
-        }
-    }
-    public void TriggerSound(EntityCommandBuffer ecb, int id, float3 position, bool isLoop)
-    {
-        Entity soundEntity = ecb.CreateEntity();
-        ecb.AddComponent(soundEntity, new PlaySoundRequest
-        {
-            SoundID = id,
-            Position = position,
-            IsLoop = isLoop
-        });
-    }*/
 
 
 

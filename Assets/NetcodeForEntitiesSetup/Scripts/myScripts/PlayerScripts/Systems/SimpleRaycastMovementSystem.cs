@@ -27,7 +27,21 @@ public partial struct SimpleRaycastMovementSystem : ISystem
         {
             // --- 1. PRÊDKOŒÆ ---
             float currentMoveSpeed = 3f;
-            if (input.ValueRO.leftMouseButton == 1) currentMoveSpeed = 1.5f;
+            byte activeSlot = inventory.ValueRO.ActiveSlotIndex;
+
+            // Sprawdzamy, czy na aktualnym slocie (1 lub 2) faktycznie mamy broñ (ID > 0)
+            bool hasWeaponInActiveSlot = activeSlot switch
+            {
+                1 => inventory.ValueRO.Slot1_WeaponId > 0,
+                2 => inventory.ValueRO.Slot2_WeaponId > 0,
+                4 => inventory.ValueRO.Slot4_GrenadeId > 0,
+                _ => false
+            };
+
+            if (hasWeaponInActiveSlot && input.ValueRO.leftMouseButton == 1)
+            {
+                currentMoveSpeed = 1.5f;
+            }
 
             // --- 2. GRAWITACJA (RAYCAST) ---
             CollisionFilter groundFilter = new CollisionFilter { BelongsTo = 1u << 0, CollidesWith = 1u << 6, GroupIndex = 0 };

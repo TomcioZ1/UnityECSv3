@@ -3,8 +3,6 @@ using Unity.Mathematics;
 using Unity.NetCode;
 
 
-
-
 public struct PlayerInventory : IComponentData
 {
     [GhostField] public byte Slot1_WeaponId;
@@ -72,10 +70,6 @@ public struct WeaponSocket : IComponentData
        public Entity WeaponSocketEntity; // Gniazdo w d³oni postaci
 }
 
-public struct WeaponSlot : IComponentData
-{
-    public byte SlotId; // 1 = Pistol, 2 = Shotgun, itd.
-}
 
 public struct WeaponPickup : IComponentData
 {
@@ -83,56 +77,7 @@ public struct WeaponPickup : IComponentData
     public int Ammo;      // Opcjonalnie: ile amunicji ma w œrodku
 }
 
-public struct  ShotgunTag : IComponentData{}
-public struct NormalGunTag : IComponentData { }
-public struct GranadeLauncherTag : IComponentData { }
 
 
-
-
-
-public struct ReloadUIRequest : IComponentData
-{
-    public float StartTime;    // Czas rozpoczêcia (SystemAPI.Time.ElapsedTime)
-    public float Duration;     // Czas trwania (z WeaponData.reloadTime)
-}
-
-
-
-
-
-
-
-
-
-
-
-public struct PlayerInventoryv2 : IComponentData
-{
-    [GhostField] public byte ActiveSlotIndex; // 1 = Broñ, 2 = Rêce
-    [GhostField] public byte WeaponId;       // ID aktualnie posiadanej broni w Slocie 1
-    [GhostField] public Entity CurrentWeaponEntity;
-
-    // Pomocnicze do detekcji zmian (nie synchronizowane)
-    public byte LastSpawnedId;
-    public byte LastActiveSlot;
-    public static PlayerInventoryv2 Default => new PlayerInventoryv2
-    {
-        ActiveSlotIndex = 2, // Zaczynamy z rêkami
-        WeaponId = 0,
-        LastActiveSlot = 0, // Inne ni¿ ActiveSlotIndex, ¿eby wymusiæ spawn na starcie
-        LastSpawnedId = 255
-    };
-}
-
-public struct WeaponResourcesv2 : IComponentData
-{
-    // Mo¿esz u¿yæ FixedLayout lub po prostu listy, 
-    // ale dla czytelnoœci zostawmy te najpotrzebniejsze:
-    public Entity Pistol;
-    public Entity Shotgun;
-    public Entity AK47;
-    public Entity Hands; // Rêce jako prefab te¿ s¹ przydatne
-}
 
 
