@@ -142,7 +142,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7430b99de9aab1040927a68c60d295da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxAmmo: 120
+  maxAmmo: 60
   MagSize: 30
   FireRate: 0.2
   ReloadTime: 2.5

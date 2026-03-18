@@ -44,9 +44,22 @@ public partial struct ServerShotSystem : ISystem
             {
                 if (currentTime >= workState.ReloadTimer)
                 {
-                    weaponData.currentAmmo = weaponData.magSize;
+                    // 1. Obliczamy ile pocisków brakuje do pe³nego magazynka
+                    int ammoNeeded = weaponData.magSize - weaponData.currentAmmo;
+
+                    // 2. Sprawdzamy ile faktycznie mo¿emy do³adowaæ (tyle ile potrzebujemy, ale nie wiêcej ni¿ mamy w zapasie)
+                    // U¿ywamy math.min dla bezpieczeñstwa (wymaga Unity.Mathematics)
+                    int ammoToLoad = Unity.Mathematics.math.min(ammoNeeded, weaponData.maxAmmo);
+
+                    // 3. Aktualizujemy wartoœci
+                    weaponData.currentAmmo += ammoToLoad; // Dodaj do magazynka
+                    weaponData.maxAmmo -= ammoToLoad;     // Odejmij z zapasu
+
+                    // 4. Resetujemy stany prze³adowania
                     workState.IsReloading = false;
                     weaponData.isReloading = false;
+
+                    // 5. Zapisujemy zaktualizowane komponenty
                     SystemAPI.SetComponent(weaponEntity, weaponData);
                     SystemAPI.SetComponent(weaponEntity, workState);
                 }
