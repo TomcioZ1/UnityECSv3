@@ -36,3 +36,9 @@ public struct GhostState : IComponentData
 {
     [GhostField] public bool IsDestroyed;
 }
+
+
+public struct DropWeapon : IComponentData
+{
+    public Entity DropWeaponPrefab;
+}

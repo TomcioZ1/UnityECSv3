@@ -114,6 +114,7 @@ MonoBehaviour:
     y: 0
     z: 0.7
   cameraOffset: 7
+  maxRange: 10
   isNormalGun: 1
   isShotgun: 0
   isGranadeLauncher: 0
@@ -152,6 +153,6 @@ MonoBehaviour:
   DefaultGhostMode: 2
   SupportedGhostModes: 3
   OptimizationMode: 0
-  Importance: 1
+  Importance: 50
   MaxSendRate: 0
   prefabId: 0ece0c3843610ee408465f45075d3cf5
