@@ -116,10 +116,13 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                 // Odczytujemy skalê z prefaba przez zaktualizowany lookup
                 var prefabTransform = _localTransformLookup[spawnerData.Player];
 
+                if (!SystemAPI.TryGetSingleton<TimeToStopTheGame>(out var gameStopData)) return;
+
                 foreach (var (rpcRequest, goInGameRequest, rpcEntity) in
                          SystemAPI.Query<RefRO<ReceiveRpcCommandRequest>, RefRO<GoInGameRequest>>()
                          .WithEntityAccess())
                 {
+
                     var connection = rpcRequest.ValueRO.SourceConnection;
 
                     // Sprawdzamy po³¹czenie u¿ywaj¹c lookupów zamiast EntityManager (dzia³a szybciej i z Burst)
@@ -131,9 +134,10 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
 
                     var networkId = _networkIdLookup[connection];
                     var playerName = goInGameRequest.ValueRO.PlayerName;
-                    //SendDestroyedGhostsToClient(ref state, ecb, connection);
-                    //Debug.Log($"[Server] Spawning '{playerName}' w {spawnerTransform.Position} ze skal¹ prefaba {prefabTransform.Scale}");
 
+                    var responseMsg = ecb.CreateEntity();
+                    ecb.AddComponent(responseMsg, new GameStartTimeResponse { ExactTimeOfGameStop =  gameStopData.ExactTimeOfGameStop});
+                    ecb.AddComponent(responseMsg, new SendRpcCommandRequest { TargetConnection = connection });
 
                     ecb.AddComponent<NetworkStreamInGame>(connection);
 
