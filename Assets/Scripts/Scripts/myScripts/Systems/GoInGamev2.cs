@@ -114,7 +114,6 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                 // Odczytujemy skalê z prefaba
                 var prefabTransform = _localTransformLookup[spawnerData.Player];
 
-                if (!SystemAPI.TryGetSingleton<TimeToStopTheGame>(out var gameStopData)) return;
 
                 // Inicjalizacja losowoœci (opcjonalne, jeœli chcesz losowaæ punkty)
                 var random = new Unity.Mathematics.Random((uint)(SystemAPI.Time.ElapsedTime * 1000) + 1);
