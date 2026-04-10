@@ -14,7 +14,9 @@ public struct TimeToStopTheGame : IComponentData
     public float ExactTimeOfGameStop;
 }
 
-public struct GameStartTimeResponse : IRpcCommand
+[GhostComponent]
+public struct game_timer : IComponentData
 {
-    public float ExactTimeOfGameStop;
+    // Czas serwerowy, w którym gra siê koñczy
+    [GhostField] public double EndTime;
 }
