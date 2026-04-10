@@ -1,6 +1,7 @@
-using Unity.Entities;
+/*using Unity.Entities;
 
 public struct ToggleChatUI : IComponentData
 {
     
 }
+*/

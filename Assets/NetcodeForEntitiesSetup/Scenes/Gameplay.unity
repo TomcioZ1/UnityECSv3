@@ -9081,7 +9081,7 @@ MonoBehaviour:
     volume: 0.3
   - name: 1 Shotgun
     clip: {fileID: 8300000, guid: 271eecef02710394fbbf61bc1dc96b66, type: 3}
-    volume: 0.03
+    volume: 0.1
   - name: 2 Walking
     clip: {fileID: 8300000, guid: fc883ce65886f7144b03184e247e2471, type: 3}
     volume: 1

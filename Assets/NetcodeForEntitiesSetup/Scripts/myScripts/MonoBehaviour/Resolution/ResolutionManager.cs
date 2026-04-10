@@ -46,7 +46,7 @@ public class ResolutionManager : MonoBehaviour
         resolutionDropdown.value = (defaultTargetIndex != -1) ? defaultTargetIndex : currentResIndex;
 
         resolutionDropdown.RefreshShownValue();
-        fullscreenToggle.isOn = Screen.fullScreen;
+        fullscreenToggle.isOn = false;
 
         // Opcjonalne: Wymuœ 800x600 przy samym starcie aplikacji
         ApplySettings(); 
