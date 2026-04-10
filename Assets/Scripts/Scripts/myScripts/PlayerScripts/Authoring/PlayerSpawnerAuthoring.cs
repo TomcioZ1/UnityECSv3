@@ -1,39 +1,54 @@
+using System.Collections.Generic;
 using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
 {
-    /// <summary>
-    /// Component data that identifies a cube spawner and gives access to the cube prefab.
-    /// </summary>
-    public struct PlayerSpawner : IComponentData
-    {
-        /// <summary>
-        /// The Cube prefab converted to an entity.
-        /// </summary>
-        public Entity Player;
-    }
-
-    /// <summary>
-    /// Baker that transforms our cube prefab into an entity and creates a spawner entity.
-    /// </summary>
     [DisallowMultipleComponent]
     public class PlayerSpawnerAuthoring : MonoBehaviour
     {
-        /// <summary>
-        /// The cube prefab to spawn.
-        /// </summary>
         public GameObject Player;
+        public List<Transform> SpawnPoints; // Tutaj przeci¹gasz 10 pustych obiektów z hierarchii
 
         class PlayerSpawnerAuthoringBaker : Baker<PlayerSpawnerAuthoring>
         {
             public override void Bake(PlayerSpawnerAuthoring authoring)
             {
-                PlayerSpawner component = default(PlayerSpawner);
-                component.Player = GetEntity(authoring.Player, TransformUsageFlags.Dynamic);
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
-                AddComponent(entity, component);
+
+                // Dodajemy g³ówny komponent
+                AddComponent(entity, new PlayerSpawner
+                {
+                    Player = GetEntity(authoring.Player, TransformUsageFlags.Dynamic),
+                    NextSpawnIndex = 0
+                });
+
+                // Dodajemy bufor i wype³niamy go pozycjami
+                var buffer = AddBuffer<SpawnPointElement>(entity);
+                foreach (var sp in authoring.SpawnPoints)
+                {
+                    if (sp != null)
+                    {
+                        buffer.Add(new SpawnPointElement { Position = sp.position });
+                    }
+                }
             }
         }
     }
+
+    // Element bufora przechowuj¹cy pozycjê spawnu
+    public struct SpawnPointElement : IBufferElementData
+    {
+        public float3 Position;
+    }
+
+    public struct PlayerSpawner : IComponentData
+    {
+        public Entity Player;
+        public int NextSpawnIndex; // Opcjonalnie: do spawnowania po kolei (Round Robin)
+    }
+
+
+
 }

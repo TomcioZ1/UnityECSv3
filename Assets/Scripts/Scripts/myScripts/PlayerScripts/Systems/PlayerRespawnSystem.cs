@@ -19,9 +19,13 @@ public partial struct PlayerRespawnSystem : ISystem
 
         double currentTime = SystemAPI.Time.ElapsedTime;
 
-        // Szukamy punktu spawnu (zak³adaj¹c, ¿e masz PlayerSpawner na mapie)
+        // 1. Pobieramy spawner i jego bufor punktów
         if (!SystemAPI.TryGetSingletonEntity<PlayerSpawner>(out var spawnerEntity)) return;
-        var spawnerTransform = SystemAPI.GetComponent<LocalTransform>(spawnerEntity);
+
+        var spawnPoints = SystemAPI.GetBuffer<SpawnPointElement>(spawnerEntity);
+
+        // Inicjalizacja losowoœci
+        var random = new Unity.Mathematics.Random((uint)(currentTime * 1000) + 1);
 
         // Szukamy martwych graczy, którym skoñczy³ siê czas kary
         foreach (var (timer, health, transform, entity) in
@@ -30,14 +34,22 @@ public partial struct PlayerRespawnSystem : ISystem
         {
             if (currentTime >= timer.ValueRO.RespawnAtTime)
             {
-                // 1. Przywracamy ¿ycie
-                health.ValueRW.HealthPoints = 100; // Ustaw domyœlne HP
+                // 2. Przywracamy ¿ycie
+                health.ValueRW.HealthPoints = 100;
 
-                // 2. Teleportujemy z powrotem na spawn
-                transform.ValueRW.Position = spawnerTransform.Position;
-                transform.ValueRW.Rotation = spawnerTransform.Rotation;
+                // 3. Wybieramy now¹ pozycjê z listy punktów
+                float3 respawnPos = float3.zero;
+                if (spawnPoints.Length > 0)
+                {
+                    int randomIndex = random.NextInt(0, spawnPoints.Length);
+                    respawnPos = spawnPoints[randomIndex].Position;
+                }
 
-                // 3. Resetujemy fizykê (na wypadek gdyby pod map¹ nabra³ prêdkoœci)
+                // 4. Teleportujemy na wylosowany spawn
+                transform.ValueRW.Position = respawnPos;
+                transform.ValueRW.Rotation = quaternion.identity; // Mo¿esz te¿ dodaæ rotacjê do SpawnPointElement
+
+                // 5. Resetujemy fizykê
                 if (SystemAPI.HasComponent<PhysicsVelocity>(entity))
                 {
                     ecb.SetComponent(entity, new PhysicsVelocity
@@ -47,7 +59,7 @@ public partial struct PlayerRespawnSystem : ISystem
                     });
                 }
 
-                // 4. Usuwamy tagi œmierci i timer
+                // 6. Usuwamy komponenty stanu œmierci
                 ecb.RemoveComponent<RespawnTimer>(entity);
                 ecb.RemoveComponent<IsDestroyedTag>(entity);
             }

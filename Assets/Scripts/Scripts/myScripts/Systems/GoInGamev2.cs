@@ -1,6 +1,7 @@
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Transforms;
 using UnityEngine;
@@ -69,7 +70,6 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         }
 
 
-     
 
 
 
@@ -77,7 +77,6 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
         [WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)]
         public partial struct GoInGameServerSystem : ISystem
         {
-            // 1. Deklaracja lookupów w strukturze
             private ComponentLookup<NetworkId> _networkIdLookup;
             private ComponentLookup<NetworkStreamInGame> _networkStreamInGameLookup;
             private ComponentLookup<LocalTransform> _localTransformLookup;
@@ -87,7 +86,6 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             {
                 state.RequireForUpdate<PlayerSpawner>();
 
-                // 2. Inicjalizacja lookupów
                 _networkIdLookup = state.GetComponentLookup<NetworkId>(true);
                 _networkStreamInGameLookup = state.GetComponentLookup<NetworkStreamInGame>(true);
                 _localTransformLookup = state.GetComponentLookup<LocalTransform>(true);
@@ -102,30 +100,31 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
             [BurstCompile]
             public void OnUpdate(ref SystemState state)
             {
-                // 3. Aktualizacja lookupów przed u¿yciem
                 _networkIdLookup.Update(ref state);
                 _networkStreamInGameLookup.Update(ref state);
                 _localTransformLookup.Update(ref state);
 
                 var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
 
+                // 1. Pobieramy spawner i jego bufor punktów
                 var spawnerEntity = SystemAPI.GetSingletonEntity<PlayerSpawner>();
                 var spawnerData = SystemAPI.GetComponent<PlayerSpawner>(spawnerEntity);
-                var spawnerTransform = SystemAPI.GetComponent<LocalTransform>(spawnerEntity);
+                var spawnPoints = SystemAPI.GetBuffer<SpawnPointElement>(spawnerEntity);
 
-                // Odczytujemy skalê z prefaba przez zaktualizowany lookup
+                // Odczytujemy skalê z prefaba
                 var prefabTransform = _localTransformLookup[spawnerData.Player];
 
                 if (!SystemAPI.TryGetSingleton<TimeToStopTheGame>(out var gameStopData)) return;
+
+                // Inicjalizacja losowoœci (opcjonalne, jeœli chcesz losowaæ punkty)
+                var random = new Unity.Mathematics.Random((uint)(SystemAPI.Time.ElapsedTime * 1000) + 1);
 
                 foreach (var (rpcRequest, goInGameRequest, rpcEntity) in
                          SystemAPI.Query<RefRO<ReceiveRpcCommandRequest>, RefRO<GoInGameRequest>>()
                          .WithEntityAccess())
                 {
-
                     var connection = rpcRequest.ValueRO.SourceConnection;
 
-                    // Sprawdzamy po³¹czenie u¿ywaj¹c lookupów zamiast EntityManager (dzia³a szybciej i z Burst)
                     if (!_networkIdLookup.HasComponent(connection) || _networkStreamInGameLookup.HasComponent(connection))
                     {
                         ecb.DestroyEntity(rpcEntity);
@@ -135,17 +134,35 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                     var networkId = _networkIdLookup[connection];
                     var playerName = goInGameRequest.ValueRO.PlayerName;
 
-                    var responseMsg = ecb.CreateEntity();
-                    ecb.AddComponent(responseMsg, new GameStartTimeResponse { ExactTimeOfGameStop =  gameStopData.ExactTimeOfGameStop});
-                    ecb.AddComponent(responseMsg, new SendRpcCommandRequest { TargetConnection = connection });
+                    // 2. Wybieramy punkt spawnu
+                    float3 spawnPosition = float3.zero; // Domyœlnie
+                    if (spawnPoints.Length > 0)
+                    {
+                        // OPCJA A: Losowo
+                        int randomIndex = random.NextInt(0, spawnPoints.Length);
+                        spawnPosition = spawnPoints[randomIndex].Position;
+
+                        /* OPCJA B: Po kolei (Round Robin) - wymaga zapisu do spawnerData
+                        int index = spawnerData.NextSpawnIndex % spawnPoints.Length;
+                        spawnPosition = spawnPoints[index].Position;
+                        spawnerData.NextSpawnIndex++;
+                        SystemAPI.SetComponent(spawnerEntity, spawnerData); 
+                        */
+                    }
+
+                    // Reszta logiki RPC
+                    /*var responseMsg = ecb.CreateEntity();
+                    ecb.AddComponent(responseMsg, new GameStartTimeResponse { ExactTimeOfGameStop = gameStopData.ExactTimeOfGameStop });
+                    ecb.AddComponent(responseMsg, new SendRpcCommandRequest { TargetConnection = connection });*/
 
                     ecb.AddComponent<NetworkStreamInGame>(connection);
 
                     var player = ecb.Instantiate(spawnerData.Player);
 
+                    // 3. Ustawiamy pozycjê na wybran¹ z bufora
                     ecb.SetComponent(player, LocalTransform.FromPositionRotationScale(
-                        spawnerTransform.Position,
-                        spawnerTransform.Rotation,
+                        spawnPosition, // Pozycja z bufora
+                        quaternion.identity,
                         prefabTransform.Scale));
 
                     ecb.SetComponent(player, new GhostOwner { NetworkId = networkId.Value });
@@ -156,19 +173,16 @@ namespace Unity.Multiplayer.Center.NetcodeForEntitiesSetup
                     ecb.DestroyEntity(rpcEntity);
                 }
             }
-
-
-          
-
-
-
-
-
         }
 
 
 
+
+
     }
+
+
+
 }
 
 
