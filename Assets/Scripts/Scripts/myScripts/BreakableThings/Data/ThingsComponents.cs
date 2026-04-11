@@ -40,5 +40,15 @@ public struct GhostState : IComponentData
 
 public struct DropWeapon : IComponentData
 {
-    public Entity DropWeaponPrefab;
+    //public Entity DropWeaponPrefab;
+    public int DropChance;
+}
+
+public struct WeaponUIPrefabsConfig : IComponentData
+{
+    public Entity MP5Prefab;
+    public Entity ShotgunPrefab;
+    public Entity AK47Prefab;
+    public Entity AWPPrefab;
+    public Entity RocketLauncherPrefab;
 }
