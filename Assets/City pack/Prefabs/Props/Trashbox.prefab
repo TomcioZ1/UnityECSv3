@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: -3763432427395273433}
   - component: {fileID: -6033687192057471974}
   - component: {fileID: -4146015989830628006}
+  - component: {fileID: 6942579848598894298}
   m_Layer: 0
   m_Name: Trashbox
   m_TagString: Untagged
@@ -357,3 +358,17 @@ MonoBehaviour:
         Tag07: 0
     m_SerializedVersion: 1
   m_SerializedVersion: 3
+--- !u!114 &6942579848598894298
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 898702685118313683}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c0382fd126255245b8615dc5db74ed4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  WeaponToDrop: {fileID: 0}
+  DropChance: 3

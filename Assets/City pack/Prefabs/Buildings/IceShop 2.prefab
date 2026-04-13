@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: -40435326030823195}
   - component: {fileID: 4696158051846024223}
   - component: {fileID: 2269157466960319736}
+  - component: {fileID: 5047052052794744666}
   m_Layer: 0
   m_Name: IceShop 2
   m_TagString: Untagged
@@ -142,7 +143,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c579632765dad3e45ba225895b97537f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  StartHealth: 100
+  StartHealth: 400
 --- !u!114 &-40435326030823195
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -357,3 +358,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dropPrefab: {fileID: 1690660832074952870, guid: 35a6c882c1a94ac4ab57b0eb2e814c1f, type: 3}
   amount: 50
+--- !u!114 &5047052052794744666
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 591102115657312813}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c0382fd126255245b8615dc5db74ed4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  WeaponToDrop: {fileID: 0}
+  DropChance: 50

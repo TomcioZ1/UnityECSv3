@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 6126082355437706562}
   - component: {fileID: 2909098649204565876}
   - component: {fileID: 8891153111367015309}
+  - component: {fileID: -3935706454454545040}
   m_Layer: 0
   m_Name: Floortrapdoor
   m_TagString: Untagged
@@ -86,3 +87,17 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &-3935706454454545040
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7160563604858728273}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c0382fd126255245b8615dc5db74ed4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  WeaponToDrop: {fileID: 0}
+  DropChance: 3

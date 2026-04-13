@@ -22,11 +22,11 @@ public class WeaponPrefabsConfigAuthoring : MonoBehaviour
             AddComponent(entity, new WeaponUIPrefabsConfig
             {
                 // Zwróæ uwagê na TransformUsageFlags.Dynamic, bo bronie bêd¹ mia³y fizykê i bêd¹ siê poruszaæ
-                MP5Prefab = GetEntity(authoring.MP5, TransformUsageFlags.Dynamic),
-                ShotgunPrefab = GetEntity(authoring.Shotgun, TransformUsageFlags.Dynamic),
-                AK47Prefab = GetEntity(authoring.AK47, TransformUsageFlags.Dynamic),
-                AWPPrefab = GetEntity(authoring.AWP, TransformUsageFlags.Dynamic),
-                RocketLauncherPrefab = GetEntity(authoring.RocketLauncher, TransformUsageFlags.Dynamic)
+                MP5Prefab = GetEntity(authoring.MP5, TransformUsageFlags.Dynamic | TransformUsageFlags.Renderable),
+                ShotgunPrefab = GetEntity(authoring.Shotgun, TransformUsageFlags.Dynamic | TransformUsageFlags.Renderable),
+                AK47Prefab = GetEntity(authoring.AK47, TransformUsageFlags.Dynamic | TransformUsageFlags.Renderable),
+                AWPPrefab = GetEntity(authoring.AWP, TransformUsageFlags.Dynamic | TransformUsageFlags.Renderable),
+                RocketLauncherPrefab = GetEntity(authoring.RocketLauncher, TransformUsageFlags.Dynamic | TransformUsageFlags.Renderable)
             });
         }
     }

@@ -1,92 +1,81 @@
-using Unity.Burst;
+/*using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
 using Unity.Transforms;
-using UnityEngine; // Potrzebne do Debug.Log
 
-[UpdateInGroup(typeof(SimulationSystemGroup))]
+[UpdateInGroup(typeof(SimulationSystemGroup))] // Zmiana na standardową grupę symulacji
+[WorldSystemFilter(WorldSystemFilterFlags.ServerSimulation)] // Zdecydowanie TYLKO serwer
 public partial struct DropWeaponSystem : ISystem
 {
     private Unity.Mathematics.Random _random;
+    private bool _randomInitialized;
 
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<WeaponUIPrefabsConfig>();
-        _random = new Unity.Mathematics.Random(1234);
+        _randomInitialized = false;
     }
 
-    // Usunąłem [BurstCompile], żeby Debug.Log mógł wysyłać wiadomości do konsoli Unity
+    [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        if (!SystemAPI.HasSingleton<WeaponUIPrefabsConfig>())
+        if (!_randomInitialized)
         {
-            Debug.LogWarning("DropWeaponSystem: Brak Singletona WeaponUIPrefabsConfig na scenie!");
-            return;
+            _random = new Unity.Mathematics.Random((uint)(System.DateTime.Now.Ticks & 0xFFFFFFFF) + 1u);
+            _randomInitialized = true;
         }
 
-        var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
-        var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
+        // Używamy BeginSimulation na kolejną klatkę, aby mieć pewność, 
+        // że transformacja zostanie zaaplikowana zanim system wysyłania Ghostów (GhostSendSystem) ją przechwyci.
+        var ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>()
+            .CreateCommandBuffer(state.WorldUnmanaged);
+
         var weaponConfig = SystemAPI.GetSingleton<WeaponUIPrefabsConfig>();
 
-        foreach (var (dropWeapon, health, transform, entity) in
-                 SystemAPI.Query<RefRO<DropWeapon>, RefRO<HealthComponent>, RefRO<LocalTransform>>()
+        foreach (var (health, transform, dropWeapon, entity) in
+                 SystemAPI.Query<RefRO<HealthComponent>, RefRO<LocalTransform>, RefRO<DropWeapon>>()
                  .WithEntityAccess())
         {
             if (health.ValueRO.HealthPoints <= 0)
             {
-                Debug.Log($"[DropSystem] Przeciwnik {entity.Index} zginął. Sprawdzam drop...");
-
-                // Losowanie szansy
-                int roll = _random.NextInt(1, 101);
-
-                Debug.Log($"[DropSystem] Rzut: {roll}, Szansa na drop: {dropWeapon.ValueRO.DropChance}");
-
-                if (roll <= dropWeapon.ValueRO.DropChance)
+                if (_random.NextInt(1, 101) <= dropWeapon.ValueRO.DropChance)
                 {
-                    int weaponIndex = _random.NextInt(0, 5);
-                    Entity prefabToSpawn = Entity.Null;
-                    string weaponName = "";
-
-                    switch (weaponIndex)
-                    {
-                        case 0: prefabToSpawn = weaponConfig.MP5Prefab; weaponName = "MP5"; break;
-                        case 1: prefabToSpawn = weaponConfig.ShotgunPrefab; weaponName = "Shotgun"; break;
-                        case 2: prefabToSpawn = weaponConfig.AK47Prefab; weaponName = "AK47"; break;
-                        case 3: prefabToSpawn = weaponConfig.AWPPrefab; weaponName = "AWP"; break;
-                        case 4: prefabToSpawn = weaponConfig.RocketLauncherPrefab; weaponName = "RocketLauncher"; break;
-                    }
+                    Entity prefabToSpawn = GetRandomWeapon(weaponConfig, ref _random);
 
                     if (prefabToSpawn != Entity.Null)
                     {
-                        Debug.Log($"[DropSystem] Spawnowanie broni: {weaponName}");
-
+                        // 1. Instantiate na serwerze - NetCode automatycznie zleci klientowi zespawnowanie jego wersji
                         Entity droppedWeapon = ecb.Instantiate(prefabToSpawn);
 
+                        // 2. Ustawiamy pozycję
                         float3 spawnPos = transform.ValueRO.Position;
-                        spawnPos.y = 5.9f;
+                        spawnPos.y = 5.9f; // Bezpieczna wysokość
 
                         ecb.SetComponent(droppedWeapon, LocalTransform.FromPositionRotationScale(
                             spawnPos,
                             quaternion.identity,
                             1.0f));
-
-                        ecb.AddComponent(droppedWeapon, new GhostOwner { NetworkId = -1 });
-                        ecb.SetComponent(droppedWeapon, new GhostState { IsDestroyed = false });
-                    }
-                    else
-                    {
-                        Debug.LogError($"[DropSystem] Wylosowano {weaponName}, ale prefab w WeaponUIPrefabsConfig jest NULL!");
                     }
                 }
-                else
-                {
-                    Debug.Log("[DropSystem] Rzut nieudany - brak dropu.");
-                }
 
-                // Usuwamy komponent
+                // Usuwamy komponent natychmiast
                 ecb.RemoveComponent<DropWeapon>(entity);
             }
         }
     }
-}
+
+    private Entity GetRandomWeapon(WeaponUIPrefabsConfig config, ref Unity.Mathematics.Random random)
+    {
+        int weaponIndex = random.NextInt(0, 5);
+        return weaponIndex switch
+        {
+            0 => config.MP5Prefab,
+            1 => config.ShotgunPrefab,
+            2 => config.AK47Prefab,
+            3 => config.AWPPrefab,
+            4 => config.RocketLauncherPrefab,
+            _ => Entity.Null
+        };
+    }
+}*/

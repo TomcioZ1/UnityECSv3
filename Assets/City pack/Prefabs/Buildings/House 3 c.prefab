@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 8842490826342817266}
   - component: {fileID: 4981782391625571286}
   - component: {fileID: 4710727229856769090}
+  - component: {fileID: -3352238276643239616}
   m_Layer: 0
   m_Name: House 3 c
   m_TagString: Untagged
@@ -342,7 +343,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c579632765dad3e45ba225895b97537f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  StartHealth: 300
+  StartHealth: 400
 --- !u!114 &4710727229856769090
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -357,3 +358,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dropPrefab: {fileID: 2694941533570073613, guid: 0cf2ff60a57556243a93271534ee34d2, type: 3}
   amount: 1000
+--- !u!114 &-3352238276643239616
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1564510280865439191}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c0382fd126255245b8615dc5db74ed4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  WeaponToDrop: {fileID: 0}
+  DropChance: 50

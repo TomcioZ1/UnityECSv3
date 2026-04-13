@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: -7392936195009755920}
   - component: {fileID: 7858338281134374375}
   - component: {fileID: 6921385787224358755}
+  - component: {fileID: 2834854285117906867}
   m_Layer: 0
   m_Name: HouseBig 5 b
   m_TagString: Untagged
@@ -343,7 +344,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c579632765dad3e45ba225895b97537f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  StartHealth: 300
+  StartHealth: 400
 --- !u!114 &7858338281134374375
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -507,3 +508,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dropPrefab: {fileID: 2694941533570073613, guid: 0cf2ff60a57556243a93271534ee34d2, type: 3}
   amount: 1000
+--- !u!114 &2834854285117906867
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6973510048403970144}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c0382fd126255245b8615dc5db74ed4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  WeaponToDrop: {fileID: 0}
+  DropChance: 50

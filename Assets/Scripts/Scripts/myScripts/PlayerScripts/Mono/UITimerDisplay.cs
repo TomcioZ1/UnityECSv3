@@ -3,6 +3,7 @@ using TMPro;
 using Unity.Entities;
 using Unity.NetCode;
 using System.Linq;
+using UnityEngine.SceneManagement;
 
 public class UITimerDisplay : MonoBehaviour
 {
@@ -59,7 +60,7 @@ public class UITimerDisplay : MonoBehaviour
 
     public void QuitButtonPressed()
     {
-        Application.Quit();
+        SceneManager.LoadScene("ConnectionUI");
     }
 
 

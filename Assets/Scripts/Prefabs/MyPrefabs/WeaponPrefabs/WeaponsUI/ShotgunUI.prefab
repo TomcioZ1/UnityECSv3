@@ -189,6 +189,7 @@ GameObject:
   - component: {fileID: -5463107534279190526}
   - component: {fileID: -7827439585510636152}
   - component: {fileID: -6491625412013221209}
+  - component: {fileID: 6029200736848602049}
   m_Layer: 0
   m_Name: ShotgunUI
   m_TagString: Untagged
@@ -465,3 +466,16 @@ MonoBehaviour:
         Tag07: 0
     m_SerializedVersion: 1
   m_SerializedVersion: 3
+--- !u!114 &6029200736848602049
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8714067658517265865}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfdaa6c06fe64fbda2b16e07a4ee0b25, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ComponentOverrides: []

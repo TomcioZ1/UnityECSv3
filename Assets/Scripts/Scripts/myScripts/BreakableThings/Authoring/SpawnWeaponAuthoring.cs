@@ -5,8 +5,6 @@ using UnityEngine;
 // 2. Authoring - to, co widzisz w Inspektorze Unity
 public class SpawnWeaponAuthoring : MonoBehaviour
 {
-    // Tutaj w edytorze przeci¹gasz prefab broni (np. Prefab AK47)
-    public GameObject WeaponToDrop;
     public int DropChance = 50; // Szansa na drop w procentach (0-100)
 }
 

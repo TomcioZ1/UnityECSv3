@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: -447130783707612827}
   - component: {fileID: 8814899508749445443}
   - component: {fileID: 7766372588557875648}
+  - component: {fileID: -6259178942356215737}
   m_Layer: 0
   m_Name: Streetsing
   m_TagString: Untagged
@@ -507,3 +508,17 @@ MonoBehaviour:
         Tag07: 0
     m_SerializedVersion: 1
   m_SerializedVersion: 3
+--- !u!114 &-6259178942356215737
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1319042789909631152}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c0382fd126255245b8615dc5db74ed4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  WeaponToDrop: {fileID: 0}
+  DropChance: 3

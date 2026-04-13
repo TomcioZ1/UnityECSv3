@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 2505556313688252846}
   - component: {fileID: -2980999256128395129}
   - component: {fileID: -5026163672714629145}
+  - component: {fileID: 8641170727573289563}
   m_Layer: 0
   m_Name: d5
   m_TagString: Untagged
@@ -357,3 +358,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dropPrefab: {fileID: 2694941533570073613, guid: 952cfd6f301adc44dbca9d30ebce7c02, type: 3}
   amount: 50
+--- !u!114 &8641170727573289563
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3397585542939872825}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c0382fd126255245b8615dc5db74ed4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  WeaponToDrop: {fileID: 0}
+  DropChance: 20
